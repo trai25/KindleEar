@@ -41,28 +41,21 @@ def reader_route_preprocess(forAjax=False):
 def ReaderRoute():
     userName = request.args.get('username')
     password = request.args.get('password')
-    key = request.args.get('key')
-    user = get_login_user()
+    
     #为了方便在墨水屏上使用，如果没有登录的话，可以使用查询字符串传递用户名和密码
-    if not user and userName:
+    if userName and password:
         user = KeUser.get_or_none(KeUser.name == userName)
-        if user:
-            isValidKey = key and (key == user.share_links.get('key'))
-            try:
-                isValidPassword = password and (user.passwd_hash == user.hash_text(password))
-                if isValidKey or isValidPassword:
-                    session['login'] = 1
-                    session['userName'] = userName
-                    session['role'] = 'admin' if userName == app.config['ADMIN_NAME'] else 'user'
-                else:
-                    user = None
-            except Exception as e:
-                default_log.warning(f"Failed to hash password and username: {e}")
-                user = None
+        if user and user.verify_password(password):
+            session['login'] = 1
+            session['userName'] = userName
+            session['role'] = 'admin' if userName == app.config['ADMIN_NAME'] else 'user'
+        else:
+            time.sleep(5) #防止暴力破解
+            user = None
+    else:
+        user = get_login_user()
 
     if not user:
-        if userName and (password or key):
-            time.sleep(5) #防止暴力破解
         return redirect(url_for("bpLogin.Login", next=url_for('bpReader.ReaderRoute')))
 
     oebDir = app.config['EBOOK_SAVE_DIR']
@@ -78,10 +71,8 @@ def ReaderRoute():
     initArticle = url_for('bpReader.ReaderArticleNoFoundRoute', tips='')
     params = user.cfg('reader_params')
     shareKey = user.share_links.get('key')
-    if (get_locale() or '').startswith('zh'):
-        helpPage = 'https://cdhigh.github.io/KindleEar/Chinese/reader.html'
-    else:
-        helpPage = 'https://cdhigh.github.io/KindleEar/English/reader.html'
+    docLang = 'Chinese' if get_locale().startswith('zh') else 'English'
+    helpPage = f'https://cdhigh.github.io/KindleEar/{docLang}/reader.html'
     return render_template('reader.html', oebBooks=oebBooks, initArticle=initArticle, params=params,
         shareKey=shareKey, comicTitle=comicTitle, helpPage=helpPage)
 
@@ -135,6 +126,8 @@ def ReaderDeletePost(user: KeUser, userDir: str):
         return _("Some parameters are missing or wrong.")
 
     for book in books.split('|'):
+        if '..' in book: #防范文件系统路径攻击
+            continue
         bkDir = os.path.join(userDir, book)
         dateDir = os.path.dirname(bkDir)
         if os.path.exists(bkDir):
@@ -180,7 +173,7 @@ def ReaderDictRoute(user: KeUser, userDir: str):
             dic.refresh()
     
     engines = {name: {'databases': klass.databases} for name,klass in all_dict_engines.items()}
-    return render_template('dict.html', user=user, engines=engines, tips='', langMap=LangMap())
+    return render_template('word_lookup.html', user=user, engines=engines, tips='', langMap=LangMap())
 
 #Api查词
 @bpReader.post("/reader/dict", endpoint='ReaderDictPost')
@@ -231,27 +224,44 @@ def ReaderDictPost(user: KeUser, userDir: str):
     try:
         definition = inst.definition(word, language)
         if not definition and language: #如果查询不到，尝试使用构词法词典获取词根
-            stem = GetWordStem(word, language)
+            hObj = InitHunspell(language)
+            stem = GetWordStem(hObj, word)
             if stem:
+                definition = inst.definition(stem, language) #再次查询
+
+            if not definition:
+                suggests = GetWordSuggestions(hObj, word)
+                if suggests:
+                    sugTxt = ' '.join([f'<a href="https://kindleear/entry/{s}" style="font-size:1.2em;font-weight:bold;margin:10px 20px 5px 0px">{s}</a>' 
+                        for s in suggests])
+                    definition = '<br/>'.join([_("No definitions found for '{}'.").format(word),
+                        _("Did you mean?"), sugTxt])
+            else:
                 word = stem
-                definition = inst.definition(word, language) #再次查询
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        definition = f'Error: {e}'
-    print(json.dumps(definition)) #TODO
+        #import traceback
+        #traceback.print_exc()
+        definition = f'Error:<br/>{e}'
+    #print(json.dumps(definition)) #TODO
     return {'status': 'ok', 'word': word, 'definition': definition, 
         'dictname': str(inst), 'others': others}
 
-#根据构词法获取词干
+#获取词典外挂的CSS
+@bpReader.route("/reader/css/<path:path>", endpoint='ReaderDictCssRoute')
+@login_required()
+def ReaderDictCssRoute(path: str, user: KeUser):
+    dictDir = app.config['DICTIONARY_DIR']
+    return send_from_directory(dictDir, path) if dictDir and os.path.exists(dictDir) else ''
+
+#构建Hunspell实例
 #language: 语种代码，只有前两个字母
-def GetWordStem(word, language):
+def InitHunspell(language):
     try:
         import dictionary
         import hunspell #type:ignore
     except Exception as e:
-        import traceback #TODO
-        default_log.warning(traceback.format_exc())
+        #import traceback #TODO
+        #default_log.warning(traceback.format_exc())
         return ''
 
     dictDir = app.config['DICTIONARY_DIR'] or ''
@@ -268,9 +278,21 @@ def GetWordStem(word, language):
     else:
         return ''
 
+    try:
+        return hunspell.Hunspell(lang=dic, hunspell_data_dir=morphDir)
+    except Exception as e:
+        default_log.warning(f'Init hunspell failed: {e}')
+        return None
+
+#根据构词法获取词干
+#hObj: hunspell 实例
+#word: 要查询的单词
+def GetWordStem(hObj, word) -> str:
+    if not hObj:
+        return ''
+
     stems = []
     try:
-        hObj = hunspell.Hunspell(lang=dic, hunspell_data_dir=morphDir)
         stems = [s for s in hObj.stem(word) if s != word]
         default_log.debug(f'got stem tuple: {stems}')
     except Exception as e:
@@ -280,9 +302,25 @@ def GetWordStem(word, language):
     if isinstance(stem, bytes):
         stem = stem.decode('utf-8')
     return stem
-    
+
+#获取单词的拼写建议
+#hObj: hunspell 实例
+#word: 要查询的单词
+def GetWordSuggestions(hObj, word) -> list:
+    if not hObj:
+        return []
+
+    try:
+        return [s for s in hObj.suggest(word) if s != word]
+    except Exception as e:
+        print(e)
+        return []
+
 #将一个特定的文章制作成电子书推送
 def PushSingleArticle(src: str, title: str, user: KeUser, userDir: str, language: str):
+    if '..' in src:
+        return _('Failed to push: {}').format('insecurity path expression')
+
     path = os.path.join(userDir, src).replace('\\', '/')
     try:
         with open(path, 'r', encoding='utf-8') as f:

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-#登录页面
+#登录页面和相关登录函数，包括重置密码，新建账号等
 #Author: cdhigh <https://github.com/cdhigh>
-import hashlib, datetime, time, json
+import datetime, time, json
 from urllib.parse import urljoin, urlencode
 from flask import Blueprint, url_for, render_template, redirect, session, current_app as app
 from flask_babel import gettext as _
 from ..base_handler import *
 from ..back_end.db_models import *
 from ..back_end.send_mail_adpt import send_html_mail
-from ..utils import new_secret_key, hide_email
+from ..utils import new_secret_key, hide_email, PasswordManager
 
 bpLogin = Blueprint('bpLogin', __name__)
 
@@ -22,17 +22,19 @@ def Login():
     # 则增加一个管理员帐号 ADMIN_NAME，密码 ADMIN_NAME，后续可以修改密码
     tips = ''
     adminName = app.config['ADMIN_NAME']
-    next_url = request.args.get('next', '')
+    nextUrl = request.args.get('next', '')
     if CreateAccountIfNotExist(adminName):
         tips = (_("Please use {}/{} to login at first time.").format(adminName, adminName))
     
-    return render_template('login.html', tips=tips, next=next_url)
+    demoMode = (app.config['DEMO_MODE'] == 'yes')
+    return render_template('login.html', tips=tips, next=nextUrl, demoMode=demoMode)
 
 @bpLogin.post("/login")
 def LoginPost():
     name = request.form.get('username', '').strip()
     passwd = request.form.get('password', '')
-    next_url = request.form.get('next', '')
+    nextUrl = request.form.get('next', '')
+    demoMode = (app.config['DEMO_MODE'] == 'yes')
     tips = ''
     if not name:
         tips = _("Username is empty.")
@@ -42,25 +44,12 @@ def LoginPost():
         tips = _("The username includes unsafe chars.")
 
     if tips:
-        return render_template('login.html', tips=tips, next=next_url)
+        return render_template('login.html', tips=tips, next=nextUrl, demoMode=demoMode)
     
     adminName = app.config['ADMIN_NAME']
     isFirstTime = CreateAccountIfNotExist(adminName) #确认管理员账号是否存在
-    pwdHash = ''
-    nameHash = ''
     user = KeUser.get_or_none(KeUser.name == name)
-    if user:
-        try:
-            pwdHash = user.hash_text(passwd)
-            nameHash = user.hash_text(name)
-        except Exception as e:
-            default_log.warning(f"Failed to hash password and username: {str(e)}")
-            user = None
-        else:
-            if user.passwd_hash != pwdHash:
-                user = None
-    
-    if user:
+    if user and user.verify_password(passwd):
         session['login'] = 1
         session['userName'] = name
         session['role'] = 'admin' if name == adminName else 'user'
@@ -68,17 +57,18 @@ def LoginPost():
             user.expires = datetime.datetime.utcnow() + datetime.timedelta(days=user.expiration_days)
             user.save()
         if 'resetpwd' in user.custom: #成功登录后清除复位密码的设置
-            custom = user.custom
-            custom.pop('resetpwd', None)
-            user.custom = custom
+            user.set_custom('resetpwd', None)
             user.save()
         
-        if not user.cfg('sender') or (nameHash == pwdHash):
+        if nextUrl:
+            parts = urlparse(nextUrl)
+            url = url_for("bpLogs.Mylogs") if parts.netloc or parts.scheme else nextUrl
+        elif not user.cfg('sender') or (name == passwd):
             url = url_for('bpAdmin.AdminAccountChange', name=name)
         elif not user.cfg('kindle_email'):
             url = url_for("bpSettings.Settings")
         else:
-            url = next_url if next_url else url_for("bpLogs.Mylogs")
+            url = url_for("bpLogs.Mylogs")
         default_log.info(f"Login event: {name}")
         return redirect(url)
     else:  #账号或密码错
@@ -92,7 +82,7 @@ def LoginPost():
         session.pop('login', None)
         session.pop('userName', None)
         session.pop('role', None)
-        return render_template('login.html', userName=name, tips=tips, next=next_url)
+        return render_template('login.html', userName=name, tips=tips, next=nextUrl, demoMode=demoMode)
 
 #判断账号是否存在
 #如果账号不存在，创建一个，并返回True，否则返回False
@@ -101,15 +91,10 @@ def CreateAccountIfNotExist(name, password=None, email='', sender=None, sm_servi
         return False
 
     password = password if password else name
-    secretKey = new_secret_key()
-    shareKey = new_secret_key(length=4)
-    try:
-        pwdHash = hashlib.md5((password + secretKey).encode('utf-8')).hexdigest()
-        nameHash = hashlib.md5((name + secretKey).encode('utf-8')).hexdigest() #避免名字非法
-    except Exception as e:
-        default_log.warning(f'CreateAccountIfNotExist failed to hash password and name: {str(e)}')
-        return False
-
+    secretKey = new_secret_key(length=16)
+    shareKey = new_secret_key(length=6)
+    pwdHash = PasswordManager(secretKey).create_hash(password)
+    
     adminName = app.config['ADMIN_NAME']
     if sm_service is None:
         sm_service = {}
@@ -133,6 +118,8 @@ def Logout():
     session.pop('login', None)
     session.pop('userName', None)
     session.pop('role', None)
+    if app.config['DEMO_MODE'] == 'yes':
+        delete_database_all_data()
     return redirect('/')
 
 #for ajax parser, if login required, retuan a dict 
@@ -278,15 +265,10 @@ def reset_pwd_final_step(user, token, new_p1, new_p2):
     pre_time = pre_set.get('expires') or (now - datetime.timedelta(hours=1)).timestamp()
     if (token == pre_set.get('token')) and (now.timestamp() < pre_time):
         if new_p1 == new_p2:
-            try:
-                pwd = user.hash_text(new_p1)
-            except:
-                tips = _("The password includes non-ascii chars.")
-            else:
-                user.set_custom('resetpwd', None)
-                user.passwd_hash = pwd
-                user.save()
-                return 'ok'
+            user.set_custom('resetpwd', None)
+            user.passwd_hash = user.hash_text(new_p1)
+            user.save()
+            return 'ok'
         else:
             return _("The two new passwords are dismatch.")
     else:

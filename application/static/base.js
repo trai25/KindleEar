@@ -376,7 +376,7 @@ function PopulateMySubscribed() {
     }
     hamb_arg.push({klass: 'btn-B', title: i18n.viewSrc, icon: 'icon-source', act: "/viewsrc/" + recipe_id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-E', title: i18n.customizeDelivTime, icon: 'icon-schedule', act: fTpl.format('ScheduleRecipe', recipe_id, title)});
-    hamb_arg.push({klass: 'btn-A', title: i18n.unsubscribe, icon: 'icon-unsubscribe', act: fTpl.format('UnsubscribeRecipe', recipe_id, title)});
+    hamb_arg.push({klass: 'btn-A', title: i18n.unsubscribe, icon: 'icon-delete', act: fTpl.format('UnsubscribeRecipe', recipe_id, title)});
     row_str.push(AddHamburgerButton(hamb_arg));
     row_str.push('</div>');
     //console.log(row_str.join(''));
@@ -968,7 +968,7 @@ function DeleteUploadRecipe(id, title) {
   });
 }
 
-//在页面下发插入bookmarklet
+//在页面下方插入bookmarklet
 function insertBookmarkletGmailThis(subscribeUrl, mailPrefix) {
   var parser = $('<a>', {href: subscribeUrl});
   var host = parser.prop('hostname');
