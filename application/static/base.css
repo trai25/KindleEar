@@ -134,6 +134,20 @@ button {
     padding: 1em .5em;
 }
 
+/* 语言选择框 */
+.home-menu .language-select {
+    border: none;
+    background: none;
+    outline: none;
+    padding: 5px;
+    font-size: 0.6em;
+    color: #333;
+    text-align: center;
+}
+.home-menu .language-select:focus {
+    outline: none;
+}
+
 .app-menu {
     background-color: #0078e7;
 }
@@ -187,10 +201,10 @@ button {
 
 .banner {
     padding: 6em 0;
-    background: #262626 url('banner-bg.png') center center no-repeat fixed;
+    background: #262626 url('/static/banner-bg.png') center center no-repeat fixed;
     text-align: center;
     background-size: cover;
-    filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='banner-bg.png', sizingMethod='scale');
+    filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='/static/banner-bg.png', sizingMethod='scale');
     width: 100%;
     display: table;
 }
@@ -209,8 +223,15 @@ button {
 }
 
 .banner-head h1 {
-    margin: 0 0 .67em;
+    margin: 0 0 .67em 0;
     font-size: 3.8em;
+    color: white;
+    font-weight: 200;
+    text-shadow: 0 1px 1px black;
+}
+.banner-head h2 {
+    margin: 0 0 .67em 0;
+    font-size: 1.5em;
     color: white;
     font-weight: 200;
     text-shadow: 0 1px 1px black;
@@ -759,6 +780,9 @@ select[id="shared_rss_lang_pick"] {
 .btn-G { /* G为深绿色背景 */
     background: linear-gradient(to bottom, rgba(76, 171, 5, 0.6) 50%, rgba(24, 87, 24, 0.8) 50%);
 }
+.btn-H { /* H为较深青蓝色的背景 */
+    background: linear-gradient(to bottom, rgba(77, 178, 178, 0.6) 50%, rgba(38, 128, 128, 0.8) 50%);
+}
 
 .lib-header {
     display: flex;
@@ -938,6 +962,9 @@ div.schedule_daytimes label {
 .icon-tts:before {
   content: "\e692";
 }
+.icon-ai:before {
+  content: "\e68a";
+}
 
 /* upload cover images */
 .imgFileUploade{
@@ -1043,22 +1070,21 @@ div.schedule_daytimes label {
 }
 
 .tooltip:hover::before {
-    text-align: left;
+    text-align: center;
     content: attr(data-msg);
     position: absolute;
-    padding: 2px 5px;
+    padding: 8px;
     display: block;
-    min-width: 220px;
+    min-width: 200px;
     color: #333;
-    opacity: 1;
     background-color: #FFFCCC;
     border: 1px solid #333;
-    border-radius: 5px;
-    font-size: 14px;
-    line-height: 18px;
-    bottom: 25px;
+    border-radius: 10px;
+    font-size: 0.8em;
+    /*line-height: 1.2em;*/
+    bottom: 2em;
     /*top: calc(-220%);*/
-    right: 0px;
+    left: 0px;
 }
 
 /* 用于推送记录异常信息太长的鼠标悬停指示 */
@@ -1142,6 +1168,12 @@ dialog#h5-dialog::backdrop {
     margin: 25px;
 }
 .h5-dialog-cancel {
+    min-width: 150px;
+    min-height: 40px;
+    margin: 25px;
+}
+/*对话框底部的所有按钮统一尺寸，与按钮使用的自定义class无关*/
+#h5-dialog-buttons button {
     min-width: 150px;
     min-height: 40px;
     margin: 25px;

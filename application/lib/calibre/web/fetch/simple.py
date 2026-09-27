@@ -17,6 +17,7 @@ import socket
 import sys
 import time
 import traceback
+from base64 import standard_b64decode
 from calibre import browser, relpath, unicode_path
 from calibre.constants import filesystem_encoding, iswindows
 from calibre.ebooks.BeautifulSoup import BeautifulSoup
@@ -31,7 +32,7 @@ from polyglot.urllib import (HTTPError,
     URLError, quote, url2pathname, urljoin, urlparse, urlsplit, urlunparse,
     urlunsplit, urlopen
 )
-from application.utils import loc_exc_pos
+from application.ke_utils import loc_exc_pos
 
 class AbortArticle(Exception):
     pass
@@ -252,13 +253,18 @@ class RecursiveFetcher:
             ans = response(q)
             ans.newurl = url
             return ans
-        self.log.debug('Fetching', url)
         st = time.monotonic()
 
+        is_data_url = url.startswith('data:')
+        if not is_data_url:
+            self.log.debug('Fetching', url)
         # Check for a URL pointing to the local filesystem and special case it
         # for efficiency and robustness. Bypasses delay checking as it does not
         # apply to local fetches. Ensures that unicode paths that are not
         # representable in the filesystem_encoding work.
+        if is_data_url:
+            payload = url.partition(',')[2]
+            return standard_b64decode(payload)
         is_local = 0
         if url.startswith('file://'):
             is_local = 7
@@ -421,9 +427,14 @@ class RecursiveFetcher:
         for tag in soup.find_all('img', src=True):
             if 'alt' not in tag.attrs:
                 tag['alt'] = 'img'
-            if 'srcset' in tag.attrs: #https://bugs.launchpad.net/bugs/1713986
-                del tag['srcset']
-
+                
+            #https://bugs.launchpad.net/bugs/1713986
+            for attrib in ['srcset', 'height', 'width', 'border', 'align', 'style']:
+                try:
+                    del tag[attrib]
+                except KeyError:
+                    pass
+            
             iurl = tag['src']
             if iurl.startswith('data:'):
                 try:

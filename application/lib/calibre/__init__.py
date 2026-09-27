@@ -383,6 +383,9 @@ def human_readable(size, sep=' '):
         size = size[:-2]
     return size + sep + suffix
 
+def is_mobile_ua(ua):
+    return 'Mobile/' in ua or 'Mobile ' in ua
+    
 def random_user_agent(choose=None, allow_ie=True):
     from calibre.utils.random_ua import common_user_agents, choose_randomly_by_popularity
     ua_list = common_user_agents()
@@ -395,5 +398,5 @@ def random_user_agent(choose=None, allow_ie=True):
     
 def browser(honor_time=True, max_time=2, user_agent=None, verify_ssl_certificates=True, handle_refresh=True, **kw):
     from urlopener import UrlOpener
-    return UrlOpener(**kw)
+    return UrlOpener(user_agent=user_agent, **kw)
     

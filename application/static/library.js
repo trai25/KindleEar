@@ -6,6 +6,17 @@ var g_rssByLang = {};
 //由BuildSharedRssByCategory()根据搜索词动态更新此数组
 var g_rssByCat = [];
 
+//将一个数组打乱，返回原数组
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    let temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+  }
+  return array;
+}
+
 //排序网友分享库的RSS，先按流行程度（订阅数）倒序，订阅数相同的按时间倒序
 function SortSharedRssDataArray() {
   if (!g_SharedRss) {
@@ -42,6 +53,8 @@ function BuildSharedRssByLang() {
   var userLang = BrowserLanguage();
   var hasUserLangRss = false;
   var hasEnRss = false;
+  var langPick = $("#shared_rss_lang_pick");
+  langPick.empty();
   for (var idx = 0; idx < g_SharedRss.length; idx++) {
     var item = g_SharedRss[idx];
     lang = item.l ? item.l : 'und'; //l=language
@@ -62,21 +75,23 @@ function BuildSharedRssByLang() {
     if (!g_rssByLang[lang]) {
       g_rssByLang[lang] = [];
       var $newLangOpt = $('<option value="{0}">{1}</option>'.format(lang, LanguageName(lang)));
-      $("#shared_rss_lang_pick").append($newLangOpt);
+      langPick.append($newLangOpt);
     }
     g_rssByLang[lang].push(item);
   }
   //自动触发和用户浏览器同样语种的选项
   if (hasUserLangRss) {
-    $("#shared_rss_lang_pick").find("option[value='" + userLang + "']").attr("selected", true);
-    $("#shared_rss_lang_pick").val(userLang).trigger('change');
+    langPick.find("option[value='" + userLang + "']").attr("selected", true);
+    langPick.val(userLang).trigger('change');
   } else if (hasEnRss) { //如果有英语则选择英语源
-    $("#shared_rss_lang_pick").find("option[value='en']").attr("selected", true);
-    $("#shared_rss_lang_pick").val('en').trigger('change');
-  } else { //最后只能选择第一个语言
-    var firstChild = $("#shared_rss_lang_pick").children().first();
-    firstChild.attr("selected", true);
-    firstChild.trigger('change');
+    langPick.find("option[value='en']").attr("selected", true);
+    langPick.val('en').trigger('change');
+  } else { //否则选择第一个语言
+    var firstChild = langPick.children().first();
+    if (firstChild) {
+      firstChild.attr("selected", true);
+      firstChild.trigger('change');
+    }
   }
 }
 
@@ -114,16 +129,39 @@ function GetRssListByTime(lang, txt) {
   return byTextTime;
 }
 
+//返回特定关键词搜索的随机排序的列表
+function GetRssShuffledListByText(lang, txt) {
+  rss = g_rssByLang[lang];
+  if (!rss) {
+    return [];
+  }
+
+  txt = txt ? txt.toUpperCase() : '';
+  var byText = [];
+  var title, url;
+  for (var i = 0; i < rss.length; i++) {
+    title = rss[i].t.toUpperCase();
+    url = rss[i].u.toUpperCase();
+    if ((title.indexOf(txt) > -1) || (url.indexOf(txt) > -1)) {
+      byText.push(rss[i])
+    }
+  }
+
+  return shuffleArray(byText);
+}
+
 //根据搜索词动态更新此数组 g_rssByCat[]
 //lang: 用户选择的语言代码，两位字母
 //txt: 搜索词，可以为空
 function BuildSharedRssByCategory(lang, txt) {
   var bySearchText = GetRssListByText(lang, txt);
   var byTextTime = GetRssListByTime(lang, txt);
+  var byShuffled = GetRssShuffledListByText(lang, txt);
 
   g_rssByCat = [];
   g_rssByCat[i18n.catAll] = bySearchText;
   g_rssByCat[i18n.catByTime] = byTextTime;
+  g_rssByCat[i18n.catRandom] = byShuffled;
   for (var idx = 0; idx < bySearchText.length; idx++) {
     var item = bySearchText[idx];
     var category = item.c || i18n.uncategoried; //c:category
@@ -285,6 +323,9 @@ function GeneratePaginationButtons(category, currentPage, maxPage) {
 
 //选择了某一个分类，根据分类填充内容列表
 function SelectCategory(obj, category) {
+  if ((category == i18n.catRandom) && g_rssByCat[i18n.catRandom] && g_rssByCat[i18n.catRandom].length > 0) {
+    shuffleArray(g_rssByCat[i18n.catRandom]);
+  }
   HightlightCategory($(obj).parent());
   ToPage(category, 1);
 };
@@ -293,9 +334,11 @@ function SelectCategory(obj, category) {
 function DoSearchInShared() {
   var input = $('#search_text');
   var txt = input.val();
-  if (txt == "#download") { //下载所有的共享RSS
-    DownAllRssToFile();
+  if ((txt == "#download") || (txt == "#downxml") || (txt == "#downjson")) { //下载所有的共享RSS
+    var fileType = (txt == "#downjson") ? "json" : "xml";
+    DownAllRssToFile(fileType);
     input.val("");
+    DoSearchInShared();
     return;
   }
 
@@ -360,39 +403,54 @@ function ReportInvalid(title, feedurl, dbId) {
 
 
 //将内容全部下载到本地一个xml文件内
-function DownAllRssToFile() {
+//fileType: 保存的文件格式，xml/json
+function DownAllRssToFile(fileType) {
   if (!g_SharedRss) {
     return;
   }
-  var title, url, ftext, cat, rssd, fmtdate, nowdate, lang;
-  var elementA = document.createElement('a');
-  var aTxt = new Array();
-  aTxt.push("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
-  aTxt.push("<opml version=\"2.0\">");
-  aTxt.push("<head>");
-  aTxt.push("  <title>KindleEar.opml</title>");
-  aTxt.push("  <dateCreated>" + new Date() + "</dateCreated>");
-  aTxt.push("  <dateModified>" + new Date() + "</dateModified>");
-  aTxt.push("  <ownerName>KindleEar</ownerName>");
-  aTxt.push("</head>");
-  aTxt.push("<body>");
-  for (var i = 0; i < g_SharedRss.length; i++) {
-    title = escapeXml(g_SharedRss[i].t);
-    url = escapeXml(g_SharedRss[i].u);
-    cat = escapeXml(g_SharedRss[i].c);
-    lang = g_SharedRss[i].l || '';
-    ftext = (g_SharedRss[i].f == "false") ? "no" : "yes";
-    aTxt.push('  <outline type="rss" text="{0}" title="{0}" xmlUrl="{1}" isFulltext="{2}" category="{3}" language="{4}" />'
-      .format(title, url, ftext, cat, lang));
+  fileType = fileType || 'xml';
+  var content, mimeType;
+  var title, url, ftext, cat, lang;
+  const now = new Date();
+  if (fileType == 'xml') {
+    var aTxt = new Array();
+    aTxt.push("<?xml version=\"1.0\" encoding=\"utf-8\" ?>");
+    aTxt.push("<opml version=\"2.0\">");
+    aTxt.push("<head>");
+    aTxt.push("  <title>KindleEar.opml</title>");
+    aTxt.push("  <dateCreated>" + now + "</dateCreated>");
+    aTxt.push("  <dateModified>" + now + "</dateModified>");
+    aTxt.push("  <ownerName>KindleEar</ownerName>");
+    aTxt.push("</head>");
+    aTxt.push("<body>");
+    for (var i = 0; i < g_SharedRss.length; i++) {
+      title = escapeXml(g_SharedRss[i].t);
+      url = escapeXml(g_SharedRss[i].u);
+      cat = escapeXml(g_SharedRss[i].c);
+      lang = g_SharedRss[i].l || '';
+      ftext = (g_SharedRss[i].f == "false") ? "no" : "yes";
+      aTxt.push('  <outline type="rss" text="{0}" title="{0}" xmlUrl="{1}" isFulltext="{2}" category="{3}" language="{4}" />'
+        .format(title, url, ftext, cat, lang));
+    }
+    aTxt.push("</body>");
+    aTxt.push("</opml>\n");
+    content = aTxt.join("\n");
+    mimeType = "application/xml";
+  } else {
+    var jsonData = g_SharedRss.map(function(item) {
+      return {t: item.t, u: item.u, c: item.c, l: item.l || '', f: item.f};
+    });
+    content = JSON.stringify(jsonData, null, 2);
+    mimeType = "application/json";
   }
-  aTxt.push("</body>");
-  aTxt.push("</opml>\n");
 
-  nowdate = new Date();
-  fmtdate = "KindleEar_library_" + nowdate.getFullYear() + "_" + ((nowdate.getMonth() + 1)) + "_" + nowdate.getDate() + ".xml";
-
-  elementA.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(aTxt.join("\n")));
-  elementA.setAttribute("download", fmtdate);
+  var elementA = document.createElement('a');
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const date = now.getDate();
+  const fmtDate = "KindleEar_" + year + "_" + month + "_" + date + "." + fileType;
+  elementA.setAttribute("href", "data:" + mimeType + ";charset=utf-8," + encodeURIComponent(content));
+  elementA.setAttribute("download", fmtDate);
   elementA.style.display = 'none';
   document.body.appendChild(elementA);
   elementA.click();

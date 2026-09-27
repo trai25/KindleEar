@@ -3,6 +3,7 @@
 """requests默认没有使用超时时间，有时候会卡死，使用此模块封装超时时间和一些表单功能
 为了尽量兼容calibre使用的mechanize无头浏览器，加了很多有用没用的接口
 """
+#Author: cdhigh <https://github.com/cdhigh>
 import sys, requests, weakref, re, traceback, time
 from functools import wraps
 from types import MethodType
@@ -39,23 +40,32 @@ def UrlRetry(max_retries, delay, backoff=1, logger=default_log):
     return decorator
 
 class UrlOpener:
+    _proxies = {}
+
     #headers 可以传入一个字典或元祖列表
     #file_stub 用于本地文件读取，如果为None，则使用python的open()函数
     def __init__(self, *, host=None, timeout=60, headers=None, file_stub=None, user_agent=None, **kwargs):
         self.host = host
         self.timeout = timeout or 60
         #addheaders不使用字典是为了和mechanize接口兼容
-        self.addheaders = [ #下面的代码假定第一个元素为 'User-Agent'
+        #为了下面的代码方便，第一个元素必须为 'User-Agent'
+        self.addheaders = [
             ('User-Agent', "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Win64; x64; Trident/5.0)"),
+            #('User-Agent', "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"), #IE11
+            #('User-Agent', "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"),
             ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
-            ("Accept-Encoding", "gzip, deflate"),]
+            ("Accept-Encoding", "gzip, deflate"),
+            ('Accept-Language', "en,*"),
+        ]
         headers = headers.items() if isinstance(headers, dict) else (headers or [])
         self.addheaders.extend([(key, value) for key, value in headers])
         if user_agent:
             self.addheaders[0] = ('User-Agent', user_agent)
 
         self.fs = file_stub #FsDictStub
-        self.session = requests.session()
+        self.session = requests.Session()
+        if self._proxies:
+            self.session.proxies.update(self._proxies)
         self.prevRespRef = None #对Response实例的一个弱引用
         self.form = None
         self.soup = None
@@ -87,28 +97,46 @@ class UrlOpener:
             resp = self.open_remote_url(url, data, headers, timeout, method, **kwargs)
 
         return self.patch_response(resp)
+
+    def get(self, *args, **kwargs):
+        kwargs['method'] = 'GET'
+        return self.open(*args, **kwargs)
+    def post(self, *args, **kwargs):
+        kwargs['method'] = 'POST'
+        return self.open(*args, **kwargs)
     
     #远程连接互联网的url
+    #正常情况不会抛出异常，可以通过传入 throw_exception=True 抛出异常
     @UrlRetry(max_retries=2, delay=2, backoff=2)
     def open_remote_url(self, url, data, headers, timeout, method, **kwargs):
         timeout = timeout if timeout else self.timeout
         headers = self.get_headers(url, headers)
-        method = 'POST' if data and (method != 'GET') else 'GET'
-        url = self.build_url(url, data, method)
-        if method == 'GET':
-            req_func = self.session.get #type:ignore
-            data = None
+        if method:
+            method = method.upper()
+        elif data or kwargs.get('json', None):
+            method = 'POST'
         else:
-            req_func = self.session.post #type:ignore
+            method = 'GET'
+        url = self.build_url(url, data, method)
+        
+        throwException = kwargs.pop('throw_exception', None)
+        kwargs.setdefault('proxies', self._proxies)
         
         try:
-            resp = req_func(url, data=data, headers=headers, timeout=timeout, allow_redirects=True, 
+            resp = self.session.request(method, url, data=data, headers=headers, timeout=timeout, allow_redirects=True, 
                 verify=False, **kwargs)
-        except:
-            resp = requests.models.Response()
-            resp.status_code = 555
-            default_log.warning(f"open_remote_url: {method} {url} failed: {traceback.format_exc()}")
-            
+        except Exception as e:
+            if throwException:
+                raise
+            else:
+                resp = requests.models.Response()
+                resp.status_code = 555
+                resp.reason = str(e)
+                default_log.warning(f"open_remote_url: {method} {url} failed: {traceback.format_exc()}")
+
+        if throwException:
+            resp.raise_for_status()
+
         #有些网页头部没有编码信息，则使用chardet检测编码，否则requests会认为text类型的编码为"ISO-8859-1"
         contentType = resp.headers.get("Content-Type", "").lower()
         if 'text/html' in contentType and "charset" not in contentType:
@@ -131,14 +159,19 @@ class UrlOpener:
         return resp
 
     #构建最终要使用的url
+    #如果是GET，则将data字典拼接为查询字符串
     def build_url(self, url, data, method):
         if url.startswith("//"):
             url = f'https:{url}'
-        elif url.startswith('www'):
+        elif url.lower().startswith('www'):
             url = f'https://{url}'
 
-        if not url.startswith('http') and self.host:
-            url = urljoin(self.host, url)
+        if not url.lower().startswith('http'):
+            if self.host:
+                url = urljoin(self.host, url)
+            elif self.prevRespRef: #通过前一个请求获取主机名
+                resp = self.prevRespRef()
+                url = urljoin(resp.url, url) if resp else url
 
         parts = urlparse(url)._replace(fragment='')
         if method == 'GET' and data:
@@ -232,11 +265,16 @@ class UrlOpener:
             resp.status_code = 555
             return self.patch_response(resp)
 
-        action = self.form.get('action') or resp.url
+        action = self.form.get('action')
+        if not action:
+            action = resp.url
+        elif not action.lower().startswith(('http', 'www')):
+            action = urljoin(resp.url, action)
         method = self.form.get('method', 'GET').upper()
         payload = self.form.get_all_values()
         return self.open(action, data=payload, method=method)
 
+    #别名函数
     submit_selected = submit
 
     #找到一个符合条件的url
@@ -352,6 +390,13 @@ class UrlOpener:
         pass
     def response(self):
         return self.prevRespRef() if self.prevRespRef else None
+
+    @classmethod
+    def set_proxy(cls, url):
+        if url and url.startswith(('http', 'socks')):
+            cls._proxies = {'http': url, 'https': url}
+        else:
+            cls._proxies = {}
 
     @classmethod
     def CodeMap(cls, errCode):

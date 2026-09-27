@@ -30,9 +30,8 @@ KindleEar支持邮件推送和在线阅读，内置一个为电子墨水屏进�
   * 上方向键 - 上一本书
   * 下方向键 - 下一本书
 
-6. Kindle浏览器不支持cookie持久化，每次打开都需要输入账号密码，为了避免这个麻烦，可以在书签中添加账号和密码的查询字符串，两种格式，任选一种，如果觉得不应该明文保存密码，可以使用"分享密钥"(可以在"编辑账号"页面找到)： 
+6. Kindle浏览器不支持cookie持久化，每次打开都需要输入账号密码，为了避免这个麻烦，可以在书签中添加账号和密码的查询字符串：    
 `https://youdomain/reader?username=YourName&password=YourPassword`     
-`https://youdomain/reader?username=YourName&key=ShareKey`    
 
 
 7. 如果需要有的订阅需要推送，有的订阅仅需要在线阅读，可以创建两个账号，一个用于推送一个用于在线阅读。   
@@ -46,18 +45,33 @@ KindleEar支持邮件推送和在线阅读，内置一个为电子墨水屏进�
 
 ### 安装词典
 1. KindleEar支持在线词典 [dict.org](https://dict.org/), [dict.cc](https://www.dict.cc/), [dict.cn](http://dict.cn/), [韦氏词典](https://www.merriam-webster.com/)，[牛津词典](https://www.oxfordlearnersdictionaries.com/)， 这几个词典不需要安装，开箱即用。    
-2. 在线词典很方便，但是避免有时候因为网络原因不是太稳定，所以如果要稳定使用，最好还是使用离线词典，为此，KindleEar同时支持 mdict/stardict 格式词典，下载对应的词典后，解压到 `data/dict` 目录（可以使用子目录整理不同的词典）。   
-3. 离线词典第一次查词会比较慢，因为要创建索引文件(后缀为trie)，特别是针对大词典，不建议在KindleEar使用大词典。   
-4. 已经默认支持美式英语的构词法规则，可以查询单词时态语态复数等变形，如果需要支持其他语种的构词法，请下载对应的hunspell格式的文件（.dic/.aff），然后拷贝到 `data/dict/morphology` ，注意不要存放到子目录下，KindleEar会自动使用和书本语言相匹配的构词法规则。   
-至于到哪里下载hunspell/myspell构词法文件，可以到github/sourceforge等网站上搜索。额外的，这里有一个 [链接](https://sourceforge.net/projects/goldendict/files/better%20morphologies/1.0/)
+2. 在线词典很方便，但是避免有时候因为网络原因不是太稳定，所以如果要稳定使用，最好还是使用离线词典，为此，KindleEar同时支持 mdict/stardict/lingvo/babylon 格式词典，下载对应的词典后，解压到 `data/dict` 目录（可以使用子目录整理不同的词典）。   
+  * mdict: 只需要 mdx 文件，如果有css，则需要位于同样目录   
+  * stardict: 需要 ifo, idx, dict 或 dict.dz   
+  * lingvo: 只需要 dsl 文件，不支持 dsl.dz，需要将 dsl.dz 解压缩为 dsl (使用gzip/7zip/winrar等软件)     
+  * babylon: 只需要 bgl 文件 （如果查词乱码，可以修改 \*.enc 文件为准确的编码）    
+3. 离线词典第一次查词会比较慢，因为要创建索引文件(后缀为trie)，之后就很快了。 
+如果要使用大型词典（比如几百兆以上），在生成索引的过程中会消耗比较多的内存，如你的服务器内存比较小，可能会创建索引失败，你可以在你的本地机器先使用对应词典查一次单词，待本地生成trie文件后，拷贝到服务器对应目录即可。   
+4. 已经默认支持美式英语的构词法规则，可以查询单词时态语态复数等变形，如果需要支持其他语种的构词法，请下载对应的hunspell格式的文件（.dic/.aff），然后拷贝到 `data/dict/morphology` (请直接创建此目录) ，注意不要存放到子目录下，KindleEar会自动使用和书本语言相匹配的构词法规则。   
+至于到哪里下载Hunspell/MySpell构词法文件，可以到github/sourceforge等网站上搜索，下面是几个直链。  
+[LibreOffice](https://github.com/LibreOffice/dictionaries)    
+[Firefox](https://addons.mozilla.org/en-US/firefox/language-tools/)    
+[sztaki](http://hlt.sztaki.hu/resources/hunspell/)     
+[wooorm](https://github.com/wooorm/dictionaries)    
 
 
 ### 使用词典
 1. 为了使用词典功能，首先在 "高级设置"/"词典" 选项页里面配置需要使用的翻译引擎和语种。   
 
-2. 在阅读时遇到不认识的单词：
-2.1. 如果已经激活左上角词典模式（默认），则点击页面左上角进入查词模式；
-2.2. 打开菜单，点击 "词典" 图标；
+2. 在阅读时遇到不认识的单词：     
+2.1. 如果已经激活左上角词典模式（默认），则点击页面左上角进入查词模式；     
+2.2. 打开菜单，点击 "词典" 图标；        
 任意一种方式进入查词模式后，页面左上角会出现一个词典角标，点击需要查询的单词即可，查词后会自动退出查词模式。   
 
 3. 点击弹出的查词框内任意地方关闭查词框。    
+
+
+## 已知BUG  
+1. chrome有部分文章的显示内容不完整   
+这个是chrome内核的iframe高度计算不准确导致，暂时没有很好的解决方案，如果碰到此情况，可以使用 Ctrl+Click 手动扩展阅读页面的高度，以让更多的内容显示出来，每次点击扩展200像素。   
+

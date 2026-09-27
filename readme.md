@@ -2,8 +2,18 @@ __English__ · [简体中文](readme_zh.md)
 
 ---
 
+**[Project documentation](https://cdhigh.github.io/KindleEar)**     
+
+
+
+[Demo site](https://kindleear.koyeb.app/)  
+Note: The demo site is a free service hosted on Koyeb. The login username and password are `admin/admin`. All data will be automatically cleared after a period of inactivity, so feel free to perform any operations. You can use it to test ebook pushing.        
+
+
+
 # Announcement
-June 1, 2024  **Release of KindleEar 3.1, includes an online reader optimized for e-ink (Docker only).**  
+Nov 19, 2024  **Release of KindleEar 3.2, featuring an AI-driven article summarizer.**    
+Api Gemini/Grok/Mistral/Groq are free to use by now.    
 
 **Significant Updates:**
 * Full support for Python 3    
@@ -12,6 +22,7 @@ June 1, 2024  **Release of KindleEar 3.1, includes an online reader optimized fo
 * Support email delivery and online reading (Docker version), built-in online reader optimized for e-ink screens   
 * Support for Calibre's recipe format without the need for modification    
 * Built-in library of over a thousand Calibre recipe files    
+* AI-driven summaries to help you stay updated on news in less time
 * Integrated bilingual translation feature, breaking language barriers for effortless information     retrieval and language learning    
 * Built-in text-to-speech functionality, transforming daily news into audio for easy consumption without reading   
 * Includes a browser extension, enabling effortless creation of web scraping recipe without coding, facilitating seamless content delivery from any website (brag)     
@@ -34,9 +45,6 @@ Support online reading too, including an online reader specifically optimized fo
 * Powerful and convenient email forwarding service   
 * Integration with systems like Evernote/Pocket/Instapaper/wallabag   
 
-
-
-For other details, please refer to the **[project documentation](https://cdhigh.github.io/KindleEar)**.
 
 
 
@@ -62,3 +70,4 @@ For other details, please refer to the **[project documentation](https://cdhigh.
 
 
 <a href="https://www.buymeacoffee.com/cdhigh" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+

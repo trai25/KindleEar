@@ -9,11 +9,13 @@ import os, io, uuid, traceback
 from bs4 import BeautifulSoup
 from calibre.customize.conversion import InputFormatPlugin, OptionRecommendation
 from calibre import strftime, force_unicode
+from calibre.web.feeds import templates
 from calibre.web.feeds.news import BasicNewsRecipe, DEFAULT_MASTHEAD_IMAGE
 from calibre.utils.localization import canonicalize_lang
 from calibre.ebooks.metadata import MetaInformation
 from calibre.ebooks.metadata.opf2 import OPFCreator
 from calibre.ebooks.metadata.toc import TOC
+from application.ke_utils import loc_exc_pos
 
 class RecipeDisabled(Exception):
     pass
@@ -56,6 +58,15 @@ class RecipeInput(InputFormatPlugin):
             help='Optimize fetching for subsequent conversion to LRF.'),
         }
 
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.user = None
+        self.feeds = []
+        self.aborted_articles = []
+        self.failed_downloads = []
+        self.index_htmls = []
+        self.recipe_objects = []
+
     #执行转换完成后返回生成的 opf 文件路径，只是路径，不包含文件名
     #recipes: 可以为文件名, StringIO, 或一个列表
     #output_dir: 输出目录
@@ -85,15 +96,11 @@ class RecipeInput(InputFormatPlugin):
                     ro.masthead_url = None
                 indexFile = ro.download()
             except Exception as e:
-                if str(e) == 'No articles downloaded, aborting':
-                    msg = f'Recipe "{recipe.title}": {e}'
-                else:
-                    msg = f'Failed to execute recipe "{recipe.title}": {e}'
-                log.warning(msg)
-                log.debug(traceback.format_exc())
+                log.warning(loc_exc_pos(f'Failed to execute recipe "{recipe.title}"'))
+                #log.debug(traceback.format_exc())
                 continue
 
-            if indexFile and ro.feed_objects:
+            if indexFile and ro.feed_objects and (len(ro.feed_objects) > 0):
                 feed_index_start += len(ro.feed_objects)
                 feeds.extend(ro.feed_objects)
                 aborted_articles.extend(ro.aborted_articles)
@@ -102,8 +109,8 @@ class RecipeInput(InputFormatPlugin):
                 recipe_objects.append(ro)
 
             #可能会有些副作用，前面的conversion_options会影响后面的recipe
-            for key, val in ro.conversion_options.items():
-                setattr(opts, key, val)
+            #for key, val in ro.conversion_options.items():
+            #    setattr(opts, key, val)
 
         if not feeds: #让上层处理
             raise Exception('All feeds are empty, aborting.')
@@ -114,62 +121,36 @@ class RecipeInput(InputFormatPlugin):
         self.index_htmls = index_htmls
         self.recipe_objects = recipe_objects
 
-        #self.build_top_index(output_dir, fs)
+        self.build_top_index(output_dir, fs, self.user)
         self.create_opf(output_dir, fs, self.user)
+        self.create_feed_navbar(output_dir, fs, self.user)
+        self.create_article_navbar(output_dir, fs, self.user)
 
         opts.no_inline_navbars = orig_no_inline_navbars
         
         fs.find_opf_path()
         return fs
 
-    #将几个顶层的index.html合并
-    def build_top_index(self, output_dir, fs):
-        if len(self.index_htmls) > 1:
-            firstName = os.path.join(output_dir, 'index.html')
-            soup1 = BeautifulSoup(fs.read(firstName), 'lxml')
-            title_tag = soup1.find('title')
-            title1 = title_tag.string if title_tag else 'KindleEar'
+    #将所有Feed标题合并，覆盖原先的index.html
+    def build_top_index(self, dir_, fs, user):
+        if len(self.recipe_objects) <= 1:
+            return
 
-            #ul里面的li提取出来，外面套ul作为原先ul的一个li
-            ul1 = soup1.find('ul', class_='calibre_feed_list')
-            if ul1:
-                li_list = ul1.find_all("li")
-                if len(li_list) > 1:
-                    new_ul = soup1.new_tag("ul", attrs={'class': ['calibre_feed_list']})
-                    for li in li_list:
-                        li.extract()
-                        new_ul.append(li)
-
-                    new_li = soup1.new_tag("li", attrs={'class': ['calibre5']})
-                    new_li.append(soup1.new_string(title1))
-                    new_li.append(new_ul)
-                    ul1.append(new_li)
-            
-            for title, name in self.index_htmls[1:]:
-                fileName = os.path.join(output_dir, name)
-                soup = BeautifulSoup(fs.read(fileName), 'lxml')
-                ul = soup.find('ul', attrs={'class': ['calibre_feed_list']})
-                if ul:
-                    li_list = ul.find_all("li")
-                    if len(li_list) > 1:
-                        new_li = soup1.new_tag("li", attrs={'class': ['calibre5']})
-                        new_li.append(soup1.new_string(title))
-                        new_li.append(ul)
-                        ul1.append(new_li)
-                    elif li_list:
-                        ul1.append(li_list[0])
-                fs.delete(fileName) #删掉不要了
-
-            if title_tag:
-                title_tag.string = 'KindleEar'
-            fs.write(firstName, str(soup1).encode('utf-8'))
+        recipe1 = self.recipe_objects[0]
+        lang = user.book_cfg('language', 'en')
+        templ = templates.IndexTemplate(lang=lang)
+        css = recipe1.template_css + '\n\n' + user.get_extra_css()
+        timefmt = recipe1.timefmt
+        src = templ.generate('KindleEar', DEFAULT_MASTHEAD_IMAGE, timefmt, self.feeds, extra_css=css).render(doctype='xhtml')
+        fileName = os.path.join(dir_, 'index.html')
+        fs.write(fileName, src, 'wb')
 
     #通过Feed对象列表构建一个opf文件，将这个函数从 BasicNewsRecipe 里面移出来，方便一次处理多个Recipe
     def create_opf(self, dir_, fs, user):
         recipe1 = self.recipe_objects[0]
         onlyRecipe = True if len(self.recipe_objects) == 1 else False
         mi = self.build_meta(recipe1, onlyRecipe)
-        cover_data, cPath, mPath = self.get_cover_masthead(dir_, recipe1, user, fs)
+        cover_data, cPath, mPath = self.get_cover_masthead(dir_, recipe1, onlyRecipe, user, fs)
         mi.cover = cPath
         mi.cover_data = ('jpg', cover_data) if cover_data else (None, None)
 
@@ -211,33 +192,17 @@ class RecipeInput(InputFormatPlugin):
     
     #创建多级TOC和书脊
     def create_toc_spine(self, opf, dir_):
-        #recipe1 = self.recipe_objects[0]
-        #onlyRecipe = len(self.recipe_objects) == 1
-        #title = recipe1.title if onlyRecipe else 'Overview'
-        #desc = recipe1.description if onlyRecipe else 'KindleEar'
-        #author = recipe1.__author__ if onlyRecipe else 'KindleEar'
-        #创建顶层toc
-        entries = []
+        entries = ['index.html']
         toc = TOC(base_path=dir_)
         self.play_order = 0
-        #index_toc = toc.add_item('index.html', None, title, play_order=self.play_order, 
-        #    description=desc, author=author)
-        
-        #if len(self.feeds) == 1: #只有一个Feed时，直接将Article做为顶层目录
-        #    entries.append('feed_0/index.html')
-        #    self.add_article_toc(self.index_toc, entries, feedIdx=0)
-        #else:
-        feedIdx = 0
-        for recipeIdx, recipe in enumerate(self.recipe_objects):
-            for feed in recipe.feed_objects:
-                feedIndexFile = f'feed_{feedIdx}/index.html'
-                entries.append(feedIndexFile)
-                author = getattr(feed, 'author', None) or None
-                desc = getattr(feed, 'description', None) or None
-                self.play_order += 1
-                item = toc.add_item(feedIndexFile, None, feed.title, play_order=self.play_order, description=desc, author=author)
-                self.add_article_toc(item, entries, feedIdx=feedIdx)
-                feedIdx += 1
+        for feedIdx, feed in enumerate(self.feeds):
+            feedIndexFile = f'feed_{feedIdx}/index.html'
+            entries.append(feedIndexFile)
+            author = getattr(feed, 'author', None) or None
+            desc = getattr(feed, 'description', None) or None
+            self.play_order += 1
+            item = toc.add_item(feedIndexFile, None, feed.title, play_order=self.play_order, description=desc, author=author)
+            self.add_article_toc(item, entries, feed, feedIdx)
 
         for i, p in enumerate(entries):
             entries[i] = os.path.join(dir_, p)
@@ -246,57 +211,205 @@ class RecipeInput(InputFormatPlugin):
 
     #创建下级toc，包括文章toc或可能的文章内toc
     #parent: 本级toc的父目录
-    #entries: 输出参数，用于保存所有添加到toc的html内容，用于之后创建spine
+    #entries: 列表，输出参数，用于保存所有添加到toc的html内容，用于之后创建spine
+    #feed: Recipe内的某一个Feed实例
     #feedIdx: 在本书内的Feed索引号
-    def add_article_toc(self, parent, entries, feedIdx):
-        feed = self.feeds[feedIdx]
-        for idx, arti in enumerate(feed):
-            if not getattr(arti, 'downloaded', False):
+    def add_article_toc(self, parent, entries, feed, feedIdx):
+        for idx, article in enumerate(feed):
+            if not getattr(article, 'downloaded', False):
                 continue
 
             aDir = f'feed_{feedIdx}/article_{idx}/'
-            author = arti.author or None
-            desc = arti.text_summary
-            if desc:
-                desc = BasicNewsRecipe.description_limiter(desc)
-            else:
-                desc = None
-            tt = arti.toc_thumbnail or None
+            author = article.author or None
+            desc = BasicNewsRecipe.description_limiter(article.text_summary) or None
+            tt = article.toc_thumbnail or None
             artiFile = f'{aDir}index.html'
             entries.append(artiFile)
-            artiTitle = arti.title or _('Untitled article')
+            artiTitle = article.title or _('Untitled article')
             self.play_order += 1
             artiTocEntry = parent.add_item(artiFile, None, artiTitle, play_order=self.play_order, author=author, description=desc, toc_thumbnail=tt)
-            for entry in arti.internal_toc_entries: #如果文章(html)内还有子目录
+            for entry in article.internal_toc_entries: #如果文章(html)内还有子目录
                 if entry.get('anchor'):
                     self.play_order += 1
                     artiTocEntry.add_item(artiFile, entry['anchor'], entry['title'] or _('Unknown section'), play_order=self.play_order)
 
-            #这段注释后的代码是添加navbar的
-            #last = os.path.join(aDir, 'index.html')
-            #src = None
-            #last = os.path.join(self.output_dir, last)
-            #for sp in arti.sub_pages:
-            #    prefix = os.path.commonprefix([opf_path, sp])
-            #    relp = sp[len(prefix):]
-            #    entries.append(relp.replace(os.sep, '/'))
-            #    last = sp
-            #if os.path.exists(last):
-            #    with open(last, 'rb') as fi:
-            #        src = fi.read().decode('utf-8')
-            #if src:
-                #soup = BeautifulSoup(src)
-                #body = soup.find('body')
-                #if body is not None:
-                    #prefix = '/'.join('..'for i in range(2*len(re.findall(r'link\d+', last))))
-                    #templ = self.navbar.generate(True, num, idx, len(f),
-                    #                not self.has_single_feed,
-                    #                arti.orig_url, __appname__, prefix=prefix,
-                    #                center=self.center_navbar)
-                    #elem = BeautifulSoup(templ.render(doctype='xhtml').decode('utf-8')).find('div')
-                    #body.insert(len(body.contents), elem)
-                #    with open(last, 'wb') as fi:
-                #        fi.write(str(soup).encode('utf-8'))
+    #创建Feed的导航条，不受user配置影响，直接创建
+    def create_feed_navbar(self, dir_, fs, user):
+        #内嵌函数
+        feedFileName = lambda dir_, idx: os.path.join(dir_, f'feed_{idx}/index.html')
+        feedNum = len(self.feeds)
+
+        for idx, feed in enumerate(self.feeds):
+            fileName = feedFileName(dir_, idx)
+            if not fs.isfile(fileName):
+                continue
+
+            src = fs.read(fileName).decode('utf-8')
+            if not src:
+                continue
+            soup = BeautifulSoup(src, 'lxml')
+            body = soup.find('body')
+            if body is None:
+                continue
+
+            #内嵌函数
+            sepAdded = False
+            def add_separator(soup, div):
+                nonlocal sepAdded
+                if not sepAdded:
+                    sepAdded = True
+                    return
+                span = soup.new_tag('span')
+                span.string = ' | '
+                div.append(span)
+
+            #内嵌函数
+            def add_navitem(soup, div, text, link):
+                a = soup.new_tag('a', href=link)
+                a.string = text
+                div.append(a)
+
+            div = soup.new_tag('div', attrs={'class': 'calibre_navbar', 
+                'style': f'text-align:center', 'data-calibre-rescale': '70'})
+            
+            #前一个Feed的链接
+            prevIdx = next((i for i in range(idx - 1, -1, -1) if fs.isfile(feedFileName(dir_, i))), -1)
+            if prevIdx >= 0:
+                PrevLink = f'../feed_{prevIdx}/index.html'
+                add_separator(soup, div)
+                add_navitem(soup, div, 'Previous', PrevLink)
+            
+            add_separator(soup, div)    
+            add_navitem(soup, div, 'Main menu', f'../index.html#feed_{idx}')
+            
+            #下一个Feed的链接
+            nextIdx = next((i for i in range(idx + 1, feedNum) if fs.isfile(feedFileName(dir_, i))), -1)
+            if nextIdx >= 0:
+                nextLink = f'../feed_{nextIdx}/index.html'
+                add_separator(soup, div)
+                add_navitem(soup, div, 'Next', nextLink)
+                
+            bottomDiv = BeautifulSoup(str(div), 'lxml').find('div') #复制一个tag用于插入末尾
+            div.append(soup.new_tag('hr'))
+            body.insert(0, div)
+            bottomDiv.insert(0, soup.new_tag('hr'))
+            bottomDiv.append(soup.new_tag('br'))
+            body.append(bottomDiv)
+            
+            try:
+                fs.write(fileName, str(soup).encode('utf-8'))
+            except:
+                pass
+
+    #需要时创建文章内的导航条
+    def create_article_navbar(self, dir_, fs, user):
+        navbarSetting = user.book_cfg('navbar') or ''
+        if not navbarSetting:
+            return
+
+        align = 'left' if 'left' in navbarSetting else 'center'
+        pos = 'bottom' if 'bottom' in navbarSetting else 'top'
+
+        feedFileName = lambda dir_, idx: os.path.join(dir_, f'feed_{idx}/index.html')
+        feedNum = len(self.feeds)
+
+        for feedIdx, feed in enumerate(self.feeds):
+            feedIndexFile = f'feed_{feedIdx}/index.html'
+            articleNum = len(feed)
+            for idx, article in enumerate(feed):
+                fileName = os.path.join(dir_, f'feed_{feedIdx}/article_{idx}/index.html')
+                if not article.downloaded or not fs.isfile(fileName):
+                    continue
+
+                src = fs.read(fileName).decode('utf-8')
+                if not src:
+                    continue
+                soup = BeautifulSoup(src, 'lxml')
+                body = soup.find('body')
+                if body is None:
+                    continue
+
+                #内嵌函数
+                sepAdded = False
+                def add_separator(soup, div):
+                    nonlocal sepAdded
+                    if not sepAdded:
+                        sepAdded = True
+                        return
+                    span = soup.new_tag('span')
+                    span.string = ' | '
+                    div.append(span)
+
+                #内嵌函数
+                def add_navitem(soup, div, text, link):
+                    a = soup.new_tag('a', href=link)
+                    a.string = text
+                    div.append(a)
+
+                div = soup.new_tag('div', attrs={'class': 'calibre_navbar', 
+                    'style': f'text-align:{align}', 'data-calibre-rescale': '70'})
+                if pos == 'bottom':
+                    div.append(soup.new_tag('hr'))
+                
+                #前一个Feed的链接
+                prevIdx = next((i for i in range(feedIdx - 1, -1, -1) if fs.isfile(feedFileName(dir_, i))), -1)
+                if prevIdx >= 0:
+                    PrevLink = f'../../feed_{prevIdx}/index.html'
+                    add_separator(soup, div)
+                    add_navitem(soup, div, '<<', PrevLink)
+
+                #前一篇文章的链接
+                fId = feedIdx
+                prevIdx = next((i for i in range(idx - 1, -1, -1) if feed.articles[i].downloaded), -1)
+                if prevIdx < 0:
+                    for fId in range(feedIdx - 1, -1, -1): #跳过没有文章的Feed或没有下载的文章
+                        lst = self.feeds[fId]
+                        prevIdx = next((i for i in range(len(lst) - 1, -1, -1) if lst.articles[i].downloaded), -1)
+                        if prevIdx >= 0:
+                            break
+                if prevIdx >= 0:
+                    PrevLink = f'../../feed_{fId}/article_{prevIdx}/index.html'
+                    add_separator(soup, div)
+                    add_navitem(soup, div, 'Prev', PrevLink)
+                
+                add_separator(soup, div)
+                add_navitem(soup, div, 'Sec', f'../index.html#article_{idx}')
+                add_separator(soup, div)
+                add_navitem(soup, div, 'Main', f'../../index.html#feed_{feedIdx}')
+
+                #下一篇文章的链接
+                fId = feedIdx
+                nextIdx = next((i for i in range(idx + 1, articleNum) if feed.articles[i].downloaded), -1)
+                if nextIdx < 0:
+                    for fId in range(feedIdx + 1, feedNum): #跳过没有文章的Feed或没有下载的文章
+                        lst = self.feeds[fId]
+                        nextIdx = next((i for i in range(len(lst)) if lst.articles[i].downloaded), -1)
+                        if nextIdx >= 0:
+                            break
+                if nextIdx >= 0:
+                    nextLink = f'../../feed_{fId}/article_{nextIdx}/index.html'
+                    add_separator(soup, div)
+                    add_navitem(soup, div, 'Next', nextLink)
+
+                #后一个Feed的链接
+                nextIdx = next((i for i in range(feedIdx + 1, feedNum) if fs.isfile(feedFileName(dir_, i))), -1)
+                if nextIdx >= 0:
+                    nextLink = f'../../feed_{nextIdx}/index.html'
+                    add_separator(soup, div)
+                    add_navitem(soup, div, '>>', nextLink)
+                
+                if pos == 'bottom':
+                    div.append(soup.new_tag('br'))
+                    body.append(div)
+                else:
+                    div.append(soup.new_tag('hr'))
+                    body.insert(0, div)
+
+                try:
+                    fs.write(fileName, str(soup).encode('utf-8'))
+                except:
+                    pass
+
 
     #通过Feed列表和一些选项构建Meta信息
     #recipe1: 第一个BasicNewsRecipe实例
@@ -344,34 +457,48 @@ class RecipeInput(InputFormatPlugin):
         if not isinstance(desc, str):
             desc = desc.decode('utf-8', 'replace')
         mi.comments = (_('Articles in this issue:') + '\n' + '\n'.join(article_titles)) + '\n\n' + desc
-
-        language = canonicalize_lang(recipe1.language if onlyRecipe else self.user.book_cfg('language'))
-        if language is not None:
-            mi.language = language
+        mi.languages = [recipe1.language]
         mi.pubdate = pdate
         mi.identifier = str(uuid.uuid4())
         return mi
 
-    #获取封面和报头路径，如果没有，使用默认图像
-    def get_cover_masthead(self, dir_, recipe1, user, fs):
-        if recipe1.get_cover_url() != False:
-            cPath = getattr(recipe1, 'cover_path', None)
-            if cPath and fs.exists(cPath):
-                cover_data = fs.read(cPath, 'rb')
-            else:
-                cPath = os.path.join(dir_, 'cover.jpg')
-                cover_data = user.get_cover_data()
-                fs.write(cPath, cover_data)
-        else:
-            cPath = None
-            cover_data = None
+    #生成并写入默认的用户封面, 返回封面二进制数据和封面文件路径
+    def _generate_default_cover(self, dir_, user, fs):
+        cPath = os.path.join(dir_, 'cover.jpg')
+        cData = user.get_cover_data()
+        fs.write(cPath, cData)
+        return cData, cPath
 
-        mPath = getattr(recipe1, 'masthead_path', None)
-        if not mPath:
-            mh_data = BasicNewsRecipe.default_masthead_image()
+    #获取单recipe模式的封面
+    def _get_recipe_cover(self, dir_, recipe, user, fs):
+        cData = cPath = None
+        try:
+            #False-不使用封面, None-使用默认封面, 其他值-自定义封面
+            if recipe.get_cover_url() != False:
+                cPath = getattr(recipe, 'cover_path', None) #之前已经下载了
+                if cPath and fs.exists(cPath):
+                    cData = fs.read(cPath, 'rb')
+                else:
+                    cData, cPath = self._generate_default_cover(dir_, user, fs)
+        except Exception:
+            pass
+            
+        return cData, cPath
+
+    #获取封面和报头路径，如果没有，使用默认图像
+    def get_cover_masthead(self, dir_, recipe1, onlyRecipe, user, fs):
+        mPath = cData = cPath = None
+        if onlyRecipe:
+            mPath = getattr(recipe1, 'masthead_path', None)
+            cData, cPath = self._get_recipe_cover(dir_, recipe1, user, fs)
+        elif user.covers.get('enable', ''):
+            cData, cPath = self._generate_default_cover(dir_, user, fs)
+            
+        if not mPath: #默认报头
             mPath = os.path.join(dir_, DEFAULT_MASTHEAD_IMAGE)
-            fs.write(mPath, mh_data, 'wb')
-        return cover_data, cPath, mPath
+            mhData = BasicNewsRecipe.default_masthead_image()
+            fs.write(mPath, mhData, 'wb')
+        return cData, cPath, mPath
 
     def postprocess_book(self, oeb, opts, log):
         for ro in self.recipe_objects:

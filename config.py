@@ -50,11 +50,11 @@ DOWNLOAD_THREAD_NUM = "3"
 #If the website allow visitors to signup or not, "yes"|"no"
 ALLOW_SIGNUP = "no"
 
-#The secret key for browser session.
-SECRET_KEY = "n7ro8QJI1qfe"
+#The secret key for browser session, at least 16 digits
+SECRET_KEY = ""
 
-#The secret key for starting delivery
-DELIVERY_KEY = "cY9gKC"
+#The secret key for starting delivery, at least 6 digits
+DELIVERY_KEY = ""
 
 #The administrator's login name
 ADMIN_NAME = "admin"
@@ -67,3 +67,6 @@ HIDE_MAIL_TO_LOCAL = "yes"
 
 #'debug', 'info', 'warning', 'error', 'critical'
 LOG_LEVEL = "warning"
+
+#if in demo mode
+DEMO_MODE = 'no'

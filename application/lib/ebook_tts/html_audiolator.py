@@ -38,7 +38,8 @@ class HtmlAudiolator:
 
         count = len(data)
         ret = []
-        for idx, item in enumerate(data):
+        interval = self.audiolator.request_interval
+        for idx, item in enumerate(data, 1):
             text = item['text']
             item['error'] = ''
             item['audio'] = ''
@@ -52,8 +53,10 @@ class HtmlAudiolator:
             else:
                 item['error'] = _('The input text is empty')
             ret.append(item)
-            if (idx < count - 1) and (self.audiolator.request_interval > 0.01):
-                time.sleep(self.audiolator.request_interval)
+            #if (idx < count) and (interval > 0.01):
+            #最后一个请求还是需要延时，否则下一篇文章的首次请求可能失败
+            if interval > 0.01:
+                time.sleep(interval)
 
         if retList:
             return ret
@@ -139,7 +142,7 @@ class HtmlAudiolator:
         for item in step1:
             if len(item) > max_len + 1: #拆分
                 subItems = []
-                for line in item.split('\n'): #按照回车进行分割
+                for line in item.splitlines(): #按照回车进行分割
                     if len(line) > max_len:
                         #再按照空格进行分割
                         words = line.split()

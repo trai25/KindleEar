@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-#设置页面
+#设置页面，页面显示语言的设置逻辑也在这里
 #Author: cdhigh <https://github.com/cdhigh>
 import os, textwrap
+from urllib.parse import urlparse
 from flask import Blueprint, render_template, request, redirect, session, current_app as app
 from flask_babel import gettext as _
 from calibre.customize.profiles import output_profiles
 from ..base_handler import *
-from ..utils import str_to_bool, str_to_int
+from ..ke_utils import str_to_bool, str_to_int
 from ..back_end.db_models import *
 from ..back_end.send_mail_adpt import avaliable_sm_services, send_mail
 from .subscribe import UpdateBookedCustomRss
 
 bpSettings = Blueprint('bpSettings', __name__)
 
-supported_languages = ['zh', 'tr_TR', 'en']
+SUPPORTED_LANGUAGES = ['en', 'zh', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'pt', 'ru', 'tr']
 
-all_timezones = {'UTC-12:00': -12, 'UTC-11:00': -11, 'UTC-10:00': -10, 'UTC-9:30': -9.5,
+ALL_TIMEZONES = {'UTC-12:00': -12, 'UTC-11:00': -11, 'UTC-10:00': -10, 'UTC-9:30': -9.5,
     'UTC-9:00': -9, 'UTC-8:00': -8, 'UTC-7:00': -7, 'UTC-6:00': -6, 'UTC-5:00': -5,
     'UTC-4:00': -4, 'UTC-3:30': -3.5, 'UTC-3:00': -3, 'UTC-2:00': -2, 'UTC-1:00': -1,
     'UTC': 0, 'UTC+1:00': 1, 'UTC+2:00': 2, 'UTC+3:00': 3, 'UTC+3:30': 3.5,
@@ -30,77 +31,68 @@ all_timezones = {'UTC-12:00': -12, 'UTC-11:00': -11, 'UTC-10:00': -10, 'UTC-9:30
 def Settings(user: KeUser):
     sm_services = avaliable_sm_services()
     return render_template('settings.html', tab='set', user=user, tips='', langMap=LangMap(), 
-        sm_services=sm_services, all_timezones=all_timezones, output_profiles=output_profiles)
+        sm_services=sm_services, all_timezones=ALL_TIMEZONES, output_profiles=output_profiles)
 
 @bpSettings.post("/settings", endpoint='SettingsPost')
 @login_required()
 def SettingsPost(user: KeUser):
     form = request.form
-    keMail = form.get('kindle_email', '').strip(';, ')
-    myTitle = form.get('rss_title')
+    base_config = user.base_config
+    book_config = user.book_config
 
-    send_mail_service = BuildSmSrvDict(user, form)
-    if not keMail:
-        tips = _("Kindle E-mail is requied!")
-    elif not myTitle:
-        tips = _("Title is requied!")
-    elif not send_mail_service:
-        tips = _("Some parameters are missing or wrong.")
-    else:
-        base_config = user.base_config
-        book_config = user.book_config
+    enable_send = form.get('enable_send')
+    base_config['enable_send'] = enable_send if enable_send in ('all', 'recipes') else ''
+    base_config['kindle_email'] = form.get('kindle_email', '').strip(';, ')
+    base_config['delivery_mode'] = form.get('delivery_mode', 'email') if app.config['EBOOK_SAVE_DIR'] else 'email'
+    base_config['webshelf_days'] = str_to_int(form.get('webshelf_days', '7'))
+    base_config['timezone'] = float(form.get('timezone', '0'))
+    user.send_time = int(form.get('send_time', '0'))
+    book_config['type'] = form.get('book_type', 'epub')
+    book_config['device'] = form.get('device_type', 'kindle')
+    book_config['title_fmt'] = form.get('title_fmt', '')
+    allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    user.send_days = [weekday for weekday, day in enumerate(allDays) if str_to_bool(form.get(day, ''))]
+    book_config['mode'] = form.get('book_mode', '')
+    book_config['rm_links'] = form.get('remove_hyperlinks', '')
+    book_config['navbar'] = form.get('navbar', '')
+    book_config['author_fmt'] = form.get('author_format', '') #修正Kindle 5.9.x固件的bug【将作者显示为日期】
+    book_config['title'] = form.get('rss_title') or 'KindleEar'
+    book_config['language'] = form.get("book_language", "en")
+    book_config['oldest_article'] = int(form.get('oldest', 7))
+    book_config['time_fmt'] = form.get('time_fmt', '')
+    user.base_config = base_config
+    user.book_config = book_config
+    user.send_mail_service = BuildSmSrvDict(user, form)
+    user.save()
+    tips = _("Settings Saved!")
 
-        enable_send = form.get('enable_send')
-        base_config['enable_send'] = enable_send if enable_send in ('all', 'recipes') else ''
-        base_config['kindle_email'] = keMail
-        base_config['delivery_mode'] = form.get('delivery_mode', 'email') if app.config['EBOOK_SAVE_DIR'] else 'email'
-        base_config['webshelf_days'] = str_to_int(form.get('webshelf_days', '7'))
-        base_config['timezone'] = float(form.get('timezone', '0'))
-        user.send_time = int(form.get('send_time', '0'))
-        book_config['type'] = form.get('book_type', 'epub')
-        book_config['device'] = form.get('device_type', 'kindle')
-        book_config['title_fmt'] = form.get('title_fmt', '')
-        allDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        user.send_days = [weekday for weekday, day in enumerate(allDays) if str_to_bool(form.get(day, ''))]
-        book_config['mode'] = form.get('book_mode', '')
-        book_config['rm_links'] = form.get('remove_hyperlinks', '')
-        book_config['author_fmt'] = form.get('author_format', '') #修正Kindle 5.9.x固件的bug【将作者显示为日期】
-        book_config['title'] = myTitle
-        book_config['language'] = form.get("book_language", "en")
-        book_config['oldest_article'] = int(form.get('oldest', 7))
-        book_config['time_fmt'] = form.get('time_fmt', '')
-        user.base_config = base_config
-        user.book_config = book_config
-        user.send_mail_service = send_mail_service
-        user.save()
-        tips = _("Settings Saved!")
-
-        #根据自定义RSS的使能设置，将自定义RSS添加进订阅列表或从订阅列表移除
-        UpdateBookedCustomRss(user)
+    #根据自定义RSS的使能设置，将自定义RSS添加进订阅列表或从订阅列表移除
+    UpdateBookedCustomRss(user)
     
     sm_services = avaliable_sm_services()
     return render_template('settings.html', tab='set', user=user, tips=tips, langMap=LangMap(), 
-        sm_services=sm_services, all_timezones=all_timezones, output_profiles=output_profiles)
+        sm_services=sm_services, all_timezones=ALL_TIMEZONES, output_profiles=output_profiles)
 
 #构建发送邮件服务配置字典，返回空字典表示出错
 #form: request.form 实例
-def BuildSmSrvDict(user: KeUser, form):
+def BuildSmSrvDict(user: KeUser, form) -> dict:
     srv = user.send_mail_service.copy()
-    srvType = form.get('sm_service', '')
     #service==admin 说明和管理员的设置一致
     if user.name == os.getenv('ADMIN_NAME') or srv.get('service') != 'admin':
+        srvType = form.get('sm_service', '')
         srv['service'] = srvType
         srv['apikey'] = form.get('sm_apikey', '')
         srv['secret_key'] = form.get('sm_secret_key', '')
         srv['host'] = form.get('sm_host', '')
-        srv['port'] = str_to_int(form.get('sm_port', '587'))
+        srv['port'] = form.get('sm_port', '')
         srv['username'] = form.get('sm_username', '')
         srv['password'] = user.encrypt(form.get('sm_password', ''))
         srv['save_path'] = form.get('sm_save_path', '')
-        validations = {
+        validations = { #根据选择的发送邮件服务类型进行简单校验
             'sendgrid': lambda srv: srv['apikey'],
             'mailjet': lambda srv: srv['apikey'] and srv['secret_key'],
-            'smtp': lambda srv: all((srv['host'], srv['port'], srv['password'])), #部分smtp不需要账号名
+            'smtp': lambda srv: srv['host'] and srv['password'], 
+            'webdav': lambda srv: srv['host'] and srv['save_path'],
             'local': lambda srv: srv['save_path']
         }
         if not validations.get(srvType, lambda _: True)(srv):
@@ -137,7 +129,7 @@ def SendTestEmailPost(user: KeUser):
         except Exception as e:
             status = str(e)
     else:
-        status = _("You have not yet set up your email address. Please go to the 'Admin' page to add your email address firstly.")
+        status = _("You have not yet set up your email address. Please go to the 'Account' page to add your email address firstly.")
 
     return {'status': status, 'emails': emails}
 
@@ -193,28 +185,37 @@ def DisplayEnv(user: KeUser):
     strEnv.append("<pre><p>" + 'appDir'.rjust(28) + " | " + appDir + "</p></pre>")
     return ''.join(strEnv)
 
-#设置国际化语种
-@bpSettings.route("/setlocale/<langCode>")
-def SetLang(langCode):
-    global supported_languages
-    if langCode not in supported_languages:
+#设置国际化语种，这个函数不管是否登录都可以执行
+@bpSettings.route("/setlocale", methods=['GET', 'POST'])
+def SetLang():
+    form = request.args if request.method == 'GET' else request.form
+    langCode = form.get('lang', 'en')
+    if langCode not in SUPPORTED_LANGUAGES:
         langCode = "en"
     session['langCode'] = langCode
-    url = request.args.get('next', '/')
-    return redirect(url)
-
+    if request.method == 'GET': #GET访问则重定向，让客户端刷新
+        url = form.get('next', '/').replace('\\', '')
+        parts = urlparse(url)
+        if parts.netloc or parts.scheme:
+            url = '/'
+        return redirect(url)
+    else: #POST访问则返回json
+        return {'status': 'ok', 'lang': langCode}
+    
 #Babel选择显示哪种语言的回调函数
 def get_locale():
     try:
-        langCode = session.get('langCode')
+        langCode = session.get('langCode') or request.accept_languages.best_match(SUPPORTED_LANGUAGES)
     except: #Working outside of request context
         langCode = 'en'
-    return langCode if langCode else request.accept_languages.best_match(supported_languages)
+    return langCode or 'en'
 
 #各种语言的语种代码和文字描述的对应关系
 def LangMap():
-    return {"en-us": _("English"),
-        "zh-cn": _("Chinese"),
+    return {
+        "en-us": _("English"),
+        "zh-cn": _("Simplified Chinese"),
+        "zh-tw": _("Traditional Chinese"),
         "fr-fr": _("French"),
         "es-es": _("Spanish"),
         "pt-br": _("Portuguese"),
@@ -254,4 +255,18 @@ def LangMap():
         "my": _("Burmese"),
         "am": _("Amharic"),
         "az": _("Azerbaijani"),
-        "kk": _("Kazakh"),}
+        "kk": _("Kazakh"),
+        "sr": _("Serbian"),
+        "hr": _("Croatian"),
+        "sk": _("Slovak"),
+        "bg": _("Bulgarian"),
+        "is": _("Icelandic"),
+        "lt": _("Lithuanian"),
+        "lv": _("Latvian"),
+        "et": _("Estonian"),
+        "mk": _("Macedonian"),
+        "sq": _("Albanian"),
+        "gl": _("Galician"),
+        "cy": _("Welsh"),
+        "eu": _("Basque"),
+        "ne": _("Nepali"),}

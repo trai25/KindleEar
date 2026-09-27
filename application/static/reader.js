@@ -4,8 +4,8 @@
 
 var g_iframeScrollHeight = 500; //在 iframeLoadEvent 里更新
 //var g_iframeClientHeight = 500;
-var g_currentArticle = {};
-var g_dictMode = false;
+var g_currentArticle = {}; //{title:,src:,}
+var g_dictMode = false; //当前是否处于查词模式
 const g_trTextContainerHeight = 350; //350px在reader.css定义tr-text-container和tr-result-text
 
 //对古董浏览器兼容性最好的判断一个变量是否为空的语法
@@ -226,6 +226,7 @@ function showDictDialog(word, text, dictname, others) {
   var titleDiv = document.getElementById('tr-word');
   var textWrap = document.getElementById('tr-text-container');
   var textDiv = document.getElementById('tr-text');
+  //候选词典下拉列表
   var ostr = ['<option value="">▽ ' + (dictname || '') + '</option>'];
   for (var i = 0; i < others.length; i++) {
     var elem = others[i];
@@ -240,7 +241,17 @@ function showDictDialog(word, text, dictname, others) {
   }
   dictNameDiv.innerHTML = ostr.join('');
   titleDiv.innerHTML = word;
-  textDiv.innerHTML = text.replace(/\n/g, '<br/>');
+  text = text ? text.replace(/\n/g, '<br/>') : '';
+  if (textDiv.attachShadow) { //使用shadow dom技术可以隔离css
+    if (!textDiv.shadowRoot) { //在第一个执行attachShadow后，这个变量会自动被设置
+      textDiv.attachShadow({mode: 'open'});
+      textDiv.shadowRoot.addEventListener('click', closeDictDialog);
+      //console.log('This browser supports Shadow DOM.');
+    }
+    textDiv.shadowRoot.innerHTML = text;
+  } else {
+    textDiv.innerHTML = text;
+  }
   textDiv.style.textAlign = text.length > 50 ? 'left' : 'center';
   var y = Math.max(event.clientY - content.scrollTop, 0);
   var height = content.clientHeight;
@@ -265,6 +276,34 @@ function showDictDialog(word, text, dictname, others) {
     scrlDown.style.display = 'none';
     textDiv.style.paddingRight = '10px';
   }
+}
+
+//关闭查词窗口
+function closeDictDialog(event) {
+  //点击了一个单词链接，处理词条跳转
+  var target = event ? event.target || event.srcElement : null;
+  if (target && (target.tagName == 'A')) {
+    event.stopPropagation();
+    event.preventDefault();
+    var href = target.getAttribute('href') || '';
+    if (href.indexOf('https://kindleear/entry/') == 0) {
+      var word = href.substring(24);
+      if (word) {
+        translateWord(word);
+        return false;
+      }
+    } else if (href && g_allowLinks) {
+      openLinkInNewTab(href);
+    }
+  }
+
+  g_dictMode = false;
+  var textDiv = document.getElementById('tr-text');
+  if (!textDiv.shadowRoot) { //如果是shadow dom，则不清除之前的翻译，让下一次的CSS渲染快一点
+    textDiv.innerHTML = '';
+  }
+  document.getElementById('tr-result').style.display = 'none';
+  document.getElementById('corner-dict-hint').style.display = 'none';
 }
 
 //查词窗口向上滚动
@@ -308,7 +347,7 @@ function clickEvent(event) {
   } else if ((x < ww / 5) && (y < wh * 0.7)) { //左侧往回翻页 (宽20%,高50%)
     pageUp(content, navbar);
   } else { //右侧往前翻页
-    pageDown(content, navbar);
+    pageDown(content, navbar, event.ctrlKey || event.metaKey);
   }
 }
 
@@ -320,7 +359,7 @@ function pageUp(content, navbar) {
     navbar.style.display = 'none';
   } else if (g_inkMode) {
     var scrollTop = content.scrollTop;
-    if (scrollTop <= 0) {
+    if (scrollTop <= 1) {
       openPrevArticle();
     } else {
       content.scrollTop = Math.max(0, scrollTop - content.clientHeight + 40);
@@ -334,17 +373,32 @@ function eventPreventDefault(event) {
 }
 
 //往下翻页
-function pageDown(content, navbar) {
+//所有参数都是可选的
+function pageDown(content, navbar, ctrlKey) {
   content = content || document.getElementById('content');
   navbar = navbar || document.getElementById('navbar');
   if (isMobile() && (navbar.style.display == "block")) {
     navbar.style.display = 'none';
   } else if (g_inkMode) {
+    var iframe = document.getElementById('iframe');
+    var iframeHeight = parseInt(iframe.style.height);
     var scrollTop = content.scrollTop;
     var scrollHeight = g_iframeScrollHeight || content.scrollHeight;
-    if (scrollTop >= scrollHeight - content.clientHeight) {
-      openNextArticle();
-    } else {
+    
+    //已经到页末, -2是考虑浮点误差，其实-1就可以
+    if (scrollTop >= scrollHeight - content.clientHeight - 2) {
+      //规避chrome的iframe高度计算不准的bug，使用Ctrl+Click手动扩展iframe高度
+      if (ctrlKey && iframeHeight) {
+        var newHeight = iframeHeight + 200; //每次增长200px
+        iframe.style.height = newHeight + 'px';
+        g_iframeScrollHeight = newHeight;
+        content.scrollTop = newHeight;
+      } else {
+        openNextArticle();
+      }
+    } else if (ctrlKey) { //跳到页末
+      content.scrollTop = scrollHeight;
+    } else { //翻页
       content.scrollTop = Math.min(scrollTop + content.clientHeight - 40, scrollHeight);
     }
   }
@@ -353,7 +407,7 @@ function pageDown(content, navbar) {
 //iframe发送过来的消息，配合reader-inject.js使用，初始版本使用，现已废弃
 //初始版本的方案是在iframe中注入脚本，和主页面互发消息，可以跨域使用，但是增加了复杂性
 //现在版本直接操纵iframe页面，python代码和js代码都更简单，但是不能跨域
-function iFrameEvent(event) {
+function iFrameEvent_Deprecated(event) {
   var data = event.data;
   //console.log('iFrameEvent: ' + JSON.stringify(data));
   g_iframeScrollHeight = data.scrollHeight;
@@ -362,10 +416,19 @@ function iFrameEvent(event) {
     document.getElementById('iframe').style.height = g_iframeScrollHeight + 'px';
   } else if (data.type == 'click') {
     if (data.href && g_allowLinks) {
-      window.location.href = data.href; //覆盖原先的阅读界面
+      openLinkInNewTab(data.href);
     } else {
       clickEvent(data.event);
     }
+  }
+}
+
+//自适应在新tab中打开链接
+function openLinkInNewTab(url) {
+  if (window.open) {
+    window.open(url, '_blank');
+  } else {
+    window.location.href = url;
   }
 }
 
@@ -519,6 +582,25 @@ function scrollToNode(container, node) {
   container.scrollTop = pos;
 }
 
+//高亮显示当前正在读的书
+function highlightCurrentArticle() {
+  var art = g_currentArticle;
+  if (isEmpty(art)) {
+    return;
+  }
+  
+  var navContent = document.getElementById('nav-content');
+  var items = navContent.querySelectorAll('.nav-title');
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    if (item.getAttribute('data-src') == art.src) {
+      item.style.fontWeight = 'bold';
+    } else {
+      item.style.fontWeight = 'normal';
+    }
+  }
+}
+
 //删除一本或多本书
 function navDeleteBooks(event) {
   hidePopMenu();
@@ -574,6 +656,8 @@ function toggleNavPopMenu() {
   allowIcon.innerHTML = g_allowLinks ? '✔' : '☐';
   var actIcon = document.getElementById('topleft-activate-dict').querySelector('.check-icon');
   actIcon.innerHTML = g_topleftDict ? '✔' : '☐';
+  var darkIcon = document.getElementById('dark-mode').querySelector('.check-icon');
+  darkIcon.innerHTML = g_darkMode ? '✔' : '☐';
   menu.style.display = (menu.style.display == 'block') ? 'none' : 'block';
 }
 
@@ -600,7 +684,7 @@ function decreaseFontSize() {
 //将目前的配置保存到服务器
 function saveSettings() {
   ajax_post('/reader/settings', {fontSize: g_fontSize, allowLinks: g_allowLinks, inkMode: g_inkMode,
-    topleftDict: g_topleftDict});
+    darkMode: g_darkMode, topleftDict: g_topleftDict});
 }
 
 //显示触摸区域图示
@@ -644,6 +728,33 @@ function toggleTopleftDict() {
   saveSettings();
 }
 
+//切换黑暗模式
+function toggleDarkMode() {
+  g_darkMode = !g_darkMode;
+  var darkIcon = document.getElementById('dark-mode').querySelector('.check-icon');
+  darkIcon.innerHTML = g_darkMode ? '✔' : '☐';
+  saveSettings();
+  setDarkModeStyle();
+}
+
+//根据黑暗模式开关，设置当前界面的样式
+function setDarkModeStyle() {
+  var tag;
+  if (g_darkMode) {
+    //document.body.style.backgroundColor = '#121212';
+    //document.body.style.color = '#e0e0e0';
+    //tag = document.getElementById('corner-dict-hint');
+    //tag.style.borderColor = '#ffffff transparent transparent transparent';
+    //tag = document.getElementById('navbar');
+    //tag.style.backgroundColor = '#121212';
+    //tag.style.color = '#e0e0e0';
+  } else {
+    //tag = document.getElementById('corner-dict-hint')
+    //tag.style.borderColor = '#291E1E transparent transparent transparent';
+  }
+  iframe.src = iframe.src; //强制刷新一次
+}
+
 //是否允许墨水屏模式
 function toggleInkMode() {
   g_inkMode = !g_inkMode;
@@ -657,13 +768,6 @@ function toggleDictMode() {
   document.getElementById('tr-result').style.display = 'none';
   document.getElementById('corner-dict-hint').style.display = g_dictMode ? 'block' : 'none';
   hideNavbar();
-}
-
-//关闭查词窗口
-function closeDictDialog() {
-  g_dictMode = false;
-  document.getElementById('tr-result').style.display = 'none';
-  document.getElementById('corner-dict-hint').style.display = 'none';
 }
 
 //根据是否使能墨水屏模式，设置相应的元素属性
@@ -735,11 +839,12 @@ function populateBooks(expandLevel) {
         if (!article || !article.src || !article.title) {
           continue;
         }
+        var sTitle = article.title.replace(/"/g, '&quot;');
         ostr.push(
              '<div class="nav-title" data-src="' + article.src +'">' +
                 '<div>' +
                   articleSvgIcon() +
-                  '<span class="nav-title-text">' + article.title + '</span>' +
+                  '<span class="nav-title-text" title="' + sTitle + '">' + article.title + '</span>' +
                 '</div>' +
               '</div>');
       }
@@ -789,9 +894,9 @@ function navClickEvent(event) {
   if (navTitle) {
     var src = navTitle.getAttribute('data-src');
     var span = navTitle.querySelector('.nav-title-text');
-    var text = span ? span.textContent.trim() : '';
-    if (src && text) {
-      openArticle({title: text, src: src});
+    var title = span ? span.textContent.trim() : '';
+    if (src && title) {
+      openArticle({title: title, src: src});
     }
   } else if (navBook) {
     toggleNavBook(navBook);
@@ -857,13 +962,17 @@ function getBookLanguage(art) {
 function openArticle(article) {
   if (article.src) {
     var iframe = document.getElementById('iframe');
-    //iframe.style.height = 'auto'; //规避iframe只能变大不能变小的bug
-    iframe.style.display = "none"; //加载完成后再显示
+    var oldSrc = g_currentArticle.src ? g_currentArticle.src.replace(/#.*$/, '') : '';
+    var newSrc = article.src.replace(/#.*$/, '');
+    if (oldSrc != newSrc) {
+      iframe.style.display = "none"; //加载完成后再显示
+    }
     iframe.src = '/reader/article/' + article.src;
     g_currentArticle = article;
   }
   hideNavbar();
   closeDictDialog();
+  highlightCurrentArticle();
 }
 
 //打开上一篇文章
@@ -929,20 +1038,37 @@ function iframeLoadEvent(evt) {
   var iframe = document.getElementById('iframe');
   adjustIFrameStyle(iframe);
   var doc = iframe.contentDocument || iframe.contentWindow.document;
+  // 监听内容变化
+  if (window.MutationObserver) {
+    var observer = new MutationObserver(function(mutations) {
+      recalculateHeight(iframe, doc);
+    });
+    
+    observer.observe(doc.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      characterData: true
+    });
+  }
+
   doc.addEventListener('click', function(event) {
+    //处理链接的点击事件
     var target = event.target || event.srcElement;
     if (target && (target.tagName == 'A')) {
       event.stopPropagation();
       event.preventDefault();
       var href = target.getAttribute('href');
       if (href && g_allowLinks) {
-        //window.open(href, '_blank');
-        window.location.href = href; //kindle不支持window.open()
+        openLinkInNewTab(href);
         return;
       }
     }
+
+    //判断是否查词典
     var selection = doc.getSelection();
     var text = selection.toString();
+    var dictDialog = document.getElementById('tr-result');
     if (g_dictMode) {
       text = text || getWordAtClick(event, iframe);
       if (text) {
@@ -950,39 +1076,109 @@ function iframeLoadEvent(evt) {
       }
       g_dictMode = false;
       document.getElementById('corner-dict-hint').style.display = 'none';
+    } else if (dictDialog && dictDialog.style.display == 'block') { //关闭查词窗口
+      closeDictDialog();
     } else if (!text) { //没有选择文本才翻页
       clickEvent(event);
     }
   });
-  doc.addEventListener('keydown', documentKeyDownEvent);
+
+  //只有PC有键盘快捷键
+  if (!isMobile()) {
+    doc.addEventListener('keydown', documentKeyDownEvent);
+  }
 }
 
 //每次iframe加载完成后调整其样式和容器高度
 function adjustIFrameStyle(iframe) {
   iframe = iframe || document.getElementById('iframe');
-  var doc = iframe.contentDocument || iframe.contentWindow.document;
+  var doc = iframe.contentWindow.document || iframe.contentDocument;
   var body = doc.body;
+  iframe.style.display = "block";
+  //添加一个元素规避chrome对iframe高度计算不准确的问题
+  if (!isMobile()) {
+    iframe.style.height = '999999px';
+    var spacer = doc.createElement('div');
+    spacer.id = 'ke-height-spacer';
+    spacer.innerHTML = '<div style="clear:both;"></div><br/><p>■ END</p><br/><br/>';
+    body.appendChild(spacer);
+    body.offsetHeight; //强制重排
+  }
   iframe.style.height = 'auto';
+
   body.style.textAlign = 'justify';
   body.style.wordWrap = 'break-word';
   body.style.hyphens = 'auto';
-  body.style.marginRight = '10px';
+  body.style.margin = '10px 20px 10px 20px';
+  body.style.paddingBottom = '20px';
   body.style.fontSize = g_fontSize.toFixed(1) + 'em';
   body.style.cursor = 'pointer';
   body.style.webkitTapHighlightColor = 'transparent';
   body.style.webkitTouchCallout = 'none';
-  iframe.style.display = "block";
+
+  if (g_darkMode) { //黑暗模式
+    body.style.backgroundColor = '#121212';
+    body.style.color = '#e0e0e0';
+    var links = doc.querySelectorAll('a');
+    for (var i = 0; i < links.length; i++) {
+      links[i].style.color = '#bb86fc';
+    }
+  } else {
+    //注释以下代码，使用默认值
+    //body.style.backgroundColor = '#ffffff';
+    //body.style.color = '#000000';
+    //var links = doc.querySelectorAll('a');
+    //for (var i = 0; i < links.length; i++) {
+    //  links[i].style.color = '#1a0dab';
+    //}
+  }
 
   var images = doc.querySelectorAll('img');
   for (var i = 0; i < images.length; i++) {
-    images[i].style.maxWidth = '100%';
-    images[i].style.height = 'auto';
+    var img = images[i];
+    img.style.maxWidth = '100%';
+    img.style.height = 'auto';
+    // 添加图片加载完成后重新计算高度
+    if (!img.complete) {
+      img.addEventListener('load', function() {
+        recalculateHeight(iframe, doc);
+      });
+    }
   }
 
+  recalculateHeight(iframe, doc);
+}
+
+//计算iframe最终高度
+function recalculateHeight(iframe, doc) {
+  var body = doc.body;
+  var html = doc.documentElement;
   var vh = getViewportHeight();
-  g_iframeScrollHeight = Math.max(doc.documentElement.scrollHeight || body.scrollHeight, vh);
-  //g_iframeClientHeight = Math.max(doc.documentElement.clientHeight || body.clientHeight, vh);
-  iframe.style.height = g_iframeScrollHeight + 'px';
+  
+  // 获取所有内容元素的高度
+  //var allElements = body.getElementsByTagName('*');
+  //var maxHeight = 0;
+  //for (var i = 0; i < allElements.length; i++) {
+  //  var elem = allElements[i];
+  //  var bottom = elem.offsetTop + elem.offsetHeight;
+  //  maxHeight = Math.max(maxHeight, bottom);
+  //}
+
+  // 获取spacer元素的位置
+  var spacer = doc.getElementById('ke-height-spacer');
+  var spacerBottom = spacer ? (spacer.offsetTop + spacer.offsetHeight) : 0;
+  
+  var height = Math.max(
+    spacerBottom,
+    body.scrollHeight,
+    body.offsetHeight,
+    html.scrollHeight,
+    html.offsetHeight,
+    vh
+  );
+  height += 40;
+  iframe.style.height = height + 'px';
+  g_iframeScrollHeight = height;
 }
 
 //使用键盘快捷键翻页
@@ -1025,4 +1221,5 @@ document.addEventListener('DOMContentLoaded', function() {
   populateBooks(1);
   iframe.style.display = "none"; //加载完成后再显示
   iframe.src = iframe.src; //强制刷新一次，避免偶尔出现不能点击的情况
+  setDarkModeStyle();
 });

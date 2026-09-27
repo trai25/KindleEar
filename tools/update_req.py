@@ -5,42 +5,44 @@
 ~=2.31.0 : >=2.31.0,==2.31.*
 >=0.2.3,<1.0.0
 """
-import re, os, sys, subprocess, secrets
+import re, os, sys, subprocess, secrets, datetime
 from itertools import chain
 
-def new_secret_key(length=12):
+def new_secret_key(length=20):
     allchars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXZYabcdefghijklmnopqrstuvwxyz'
     return ''.join([secrets.choice(allchars) for i in range(length)])
 
-REQ_COMM = [('requests', '~=2.32.0'),
+REQ_COMM = [
+    ('requests', '~=2.32.4'),
+    ('PySocks', '~=1.7.1'),
     ('chardet', '~=5.2.0'),
-    ('pillow', '~=10.3.0'),
-    ('lxml', '~=5.2.0'),
-    ('lxml_html_clean', '~=0.1.1'),
+    ('pillow', '~=10.4.0'),
+    ('lxml', '~=5.3.0'),
+    ('lxml-html-clean', '~=0.4.1'),
     ('sendgrid', '~=6.11.0'),
-    ('mailjet_rest', '~=1.3.4'),
+    ('mailjet-rest', '~=1.3.4'),
     ('python-dateutil', '~=2.9.0'),
-    ('css_parser', '~=1.0.10'),
-    ('beautifulsoup4', '~=4.12.2'),
+    ('css-parser', '~=1.0.10'),
+    ('beautifulsoup4', '~=4.13.5'),
     ('html2text', '~=2024.2.26'),
     ('html5lib', '~=1.1'),
     ('#html5-parser', '~=0.4.0'),
-    ('gunicorn', '~=22.0.0'),
+    ('gunicorn', '~=23.0.0'),
     ('Flask', '~=3.0.3'),
     ('flask-babel', '~=4.0.0'),
     ('six', '~=1.16.0'),
     ('feedparser', '~=6.0.11'),
     ('qrcode', '~=7.4.2'),
-    ('gtts', '~=2.5.1'),
-    ('edge-tts', '~=6.1.11'),
+    ('gtts', '~=2.5.4'),
+    ('edge-tts', '~=7.2.2'),
     ('justext', '~=3.0.1'),
 ]
 
 REQ_DB = {
-    'sqlite': [('peewee', '~=3.17.1'),],
-    'mysql': [('peewee', '~=3.17.1'), ('pymysql', '~=1.1.0'),],
-    'postgresql': [('peewee', '~=3.17.1'), ('psycopg2-binary', '~=2.9.9'),],
-    'cockroachdb': [('peewee', '~=3.17.1'), ('psycopg2-binary', '~=2.9.9'),],
+    'sqlite': [('peewee', '~=3.17.8'),],
+    'mysql': [('peewee', '~=3.17.8'), ('pymysql', '~=1.1.1'),],
+    'postgresql': [('peewee', '~=3.17.8'), ('psycopg2-binary', '~=2.9.9'),],
+    'cockroachdb': [('peewee', '~=3.17.8'), ('psycopg2-binary', '~=2.9.9'),],
     'datastore': [('weedata', '>=0.2.7,<1.0.0'), ('google-cloud-datastore', '~=2.19.0'),],
     'mongodb': [('weedata', '>=0.2.7,<1.0.0'), ('pymongo', '~=4.6.3'),],
     'redis': [('weedata', '>=0.2.7,<1.0.0'), ('redis', '~=5.0.3'),],
@@ -56,9 +58,9 @@ REQ_TASK = {
 
 REQ_PLAT = {'gae': [('appengine-python-standard', '~=1.1.6'),
         ('google-cloud-texttospeech', '~=2.16.3')],
-    'docker': [('chunspell', '~=2.0.3'), ('marisa_trie', '~=1.2.0'), ('indexed-gzip', '~=1.8.7')], #docker/amd64 basic libs
-    'dockerArm': [('chunspell', '~=2.0.3'), ('marisa_trie', '~=1.2.0'), ('indexed-gzip', '~=1.8.7')], #docker/arm64 basic libs
-    'dockerAll': [('weedata', '>=0.2.7,<1.0.0'),('pymysql', '~=1.1.0'), #docker[all] install all libs
+    'docker': [('chunspell', '~=2.0.4'), ('marisa-trie', '~=1.2.1'), ('indexed-gzip', '~=1.9.1')], #docker/amd64 basic libs
+    'dockerArm': [('chunspell', '~=2.0.4'), ('marisa-trie', '~=1.2.1'), ('indexed-gzip', '~=1.9.1')], #docker/arm64 basic libs
+    'dockerAll': [('weedata', '>=0.2.7,<1.0.0'),('pymysql', '~=1.1.1'), #docker[all] install all libs
         ('psycopg2-binary', '~=2.9.9'),('pymongo', '~=4.6.3'),('redis', '~=5.0.3'),
         ('celery', '~=5.3.6'),('flask-rq2', '~=18.3'),('sqlalchemy', '~=2.0.29')],
 }
@@ -108,7 +110,7 @@ def dockerize_config_py(cfgFile, arg):
         'KE_TEMP_DIR': '/tmp', 'DOWNLOAD_THREAD_NUM': '3', 'ALLOW_SIGNUP': 'no',
         'HIDE_MAIL_TO_LOCAL': 'yes', 'LOG_LEVEL': 'warning', 'SECRET_KEY': new_secret_key,
         'DELIVERY_KEY': lambda: new_secret_key(6), 'EBOOK_SAVE_DIR': '/data/ebooks', 
-        'DICTIONARY_DIR': '/data/dict'}
+        'DICTIONARY_DIR': '/data/dict', 'DEMO_MODE': 'no'}
     ret = []
     inDocComment = False
     pattern = r"^([_A-Z]+)\s*=\s*(.+)$"
@@ -140,7 +142,7 @@ def dockerize_config_py(cfgFile, arg):
 def gae_location():
     try:
         output = subprocess.check_output(['gcloud', 'beta', 'app', 'describe'], universal_newlines=True)
-        lines = output.split('\n')
+        lines = output.splitlines()
         for line in lines:
             if 'locationId:' in line:
                 loc = line[11:].strip()
@@ -172,7 +174,8 @@ def gaeify_config_py(cfgFile):
         'DATABASE_URL': 'datastore', 'TASK_QUEUE_SERVICE': 'gae', 'TASK_QUEUE_BROKER_URL': '',
         'KE_TEMP_DIR': '/tmp', 'DOWNLOAD_THREAD_NUM': '2', 'ALLOW_SIGNUP': 'no',
         'HIDE_MAIL_TO_LOCAL': 'yes', 'LOG_LEVEL': 'warning', 'SECRET_KEY': new_secret_key,
-        'DELIVERY_KEY': lambda: new_secret_key(6), 'EBOOK_SAVE_DIR': '', 'DICTIONARY_DIR': ''}
+        'DELIVERY_KEY': lambda: new_secret_key(6), 'EBOOK_SAVE_DIR': '', 'DICTIONARY_DIR': '',
+        'DEMO_MODE': 'no'}
     ret = []
     inDocComment = False
     pattern = r"^([_A-Z]+)\s*=\s*(.+)$"
@@ -269,22 +272,41 @@ def update_worker_yaml(workerYamlFile, arg):
             f.write('\n'.join(lines))
         print('\n'.join(ret))
 
+#update build date in main.py
+def update_build_date(mainFile):
+    buildDate = datetime.datetime.now().strftime('%Y%m%d')
+    with open(mainFile, 'r', encoding='utf-8') as f:
+        lines = f.read().splitlines()
+    for idx in range(len(lines)):
+        match = re.match(r'^__BuildDate__\s*=\s*[\'\"]\d{8}[\'\"].*', lines[idx])
+        if match:
+            lines[idx] = f"__BuildDate__ = '{buildDate}'"
+            break
+    else:
+        print('Cannot find __BuildDate__ line in main.py. Please verify it.')
+        return
+
+    with open(mainFile, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines) + '\n')
+
 if __name__ == '__main__':
     thisDir = os.path.abspath(os.path.dirname(__file__))
     cfgFile = os.path.normpath(os.path.join(thisDir, '..', 'config.py'))
     reqFile = os.path.normpath(os.path.join(thisDir, '..', 'requirements.txt'))
     workerYamlFile = os.path.normpath(os.path.join(thisDir, '..', 'worker.yaml'))
+    mainFile = os.path.normpath(os.path.join(thisDir, '..', 'main.py'))
     if not os.path.exists(cfgFile):
         cfgFile = os.path.normpath(os.path.join(thisDir, 'config.py'))
         reqFile = os.path.normpath(os.path.join(thisDir, 'requirements.txt'))
         workerYamlFile = os.path.normpath(os.path.join(thisDir, 'worker.yaml'))
+        mainFile = os.path.normpath(os.path.join(thisDir, 'main.py'))
 
     dockerArgs = ''
     gaeify = False
     arg1 = sys.argv[1] if len(sys.argv) >= 2 else ''
     arg2 = sys.argv[2] if len(sys.argv) >= 3 else '' #TARGETPLATFORM
     if arg1 == '--help':
-        print('This script can help you to update config.py and requirements.txt.')
+        print('This script will update config.py, requirements.txt and main.py.')
         print('Command arguments:')
         print('  docker              : prepare for docker image')
         print('  docker[all]         : prepare for docker image, install all libs')
@@ -294,16 +316,16 @@ if __name__ == '__main__':
         print('  empty               : do not modify config.py, only update requirements.txt')
         sys.exit(1)
     elif arg1.startswith('docker'):
-        print('\nUpdating config.py and requirements.txt for Docker deployment.\n')
+        print('\nUpdating config.py, requirements.txt and main.py for Docker deployment.\n')
         dockerize_config_py(cfgFile, arg1)
         dockerArgs = arg1
     elif arg1.startswith('gae'):
-        print('\nUpdating config.py and requirements.txt for GAE deployment.\n')
+        print('\nUpdating config.py, requirements.txt and main.py for GAE deployment.\n')
         gaeify_config_py(cfgFile)
         update_worker_yaml(workerYamlFile, arg1)
         gaeify = True
-    else:
-        print('\nThis script can help you to update requirements.txt.\n')
+    elif arg1 != '-y':
+        print('\nThis script will update requirements.txt and main.py.\n')
         usrInput = input('Press y to continue :')
         if usrInput.lower() != 'y':
             sys.exit(1)
@@ -331,5 +353,6 @@ if __name__ == '__main__':
         extras.update(dockerArgs.split('[')[-1].rstrip(']').split(','))
 
     write_req(reqFile, db, task, plat, *extras)
-    print(f'Finished create {reqFile}')
+    update_build_date(mainFile)
+    print(f'Finished update {os.path.basename(reqFile)} and {os.path.basename(mainFile)}')
     sys.exit(0)

@@ -2,15 +2,19 @@
 # -*- coding:utf-8 -*-
 #一些高级设置功能页面
 #Author: cdhigh <https://github.com/cdhigh>
-import re, io, textwrap, json
+import re, io, os, textwrap, json, base64
 from urllib.parse import unquote, urljoin, urlparse
 from bs4 import BeautifulSoup
-from flask import Blueprint, url_for, render_template, redirect, session, send_file, abort, current_app as app
+from html import escape
+from flask import (Blueprint, url_for, render_template, redirect, session, send_file, 
+                    abort, Response, current_app as app)
 from flask_babel import gettext as _
 from PIL import Image
 from ..base_handler import *
 from ..back_end.db_models import *
-from ..utils import ke_decrypt, str_to_int, str_to_bool, safe_eval, xml_escape, xml_unescape
+from ..ke_utils import ke_decrypt, str_to_int, str_to_bool, safe_eval, xml_escape, xml_unescape
+from ..mail_hook import (get_mail_hook, get_mail_hook_filename, load_hook_payload, save_mail_hook,
+    delete_mail_hook, compile_mail_hook, MAX_HOOK_FILE_SIZE)
 from ..lib.pocket import Pocket
 from ..lib.wallabag import WallaBag
 from ..lib.urlopener import UrlOpener
@@ -19,24 +23,33 @@ from .settings import UpdateBookedCustomRss, LangMap
 bpAdv = Blueprint('bpAdv', __name__)
 
 def adv_render_template(tpl, advCurr, **kwargs):
+    user = kwargs.get('user', None)
     kwargs.setdefault('tab', 'advset')
     kwargs.setdefault('tips', '')
     kwargs.setdefault('adminName', app.config['ADMIN_NAME'])
-    print(kwargs.get('tips'))
+    if user:
+        kwargs.setdefault('hasProxy', bool(user.cfg('proxy')))
+    #print(kwargs.get('tips'))
     return render_template(tpl, advCurr=advCurr, **kwargs)
 
 #现在推送
-@bpAdv.route("/adv", endpoint='AdvDeliverNowEntry')
-@bpAdv.route("/adv/delivernow", endpoint='AdvDeliverNow')
+@bpAdv.route("/advanced", endpoint='AdvDeliverNowEntry')
+@bpAdv.route("/advanced/delivernow", endpoint='AdvDeliverNow')
 @login_required()
 def AdvDeliverNow(user: KeUser):
     recipes = user.get_booked_recipe()
+    if user.cfg('enable_send') != 'all': #添加自定义RSS
+        rss = [BookedRecipe(recipe_id=r.recipe_id, separated=r.custom.get('separated', False),
+                user=user.name, title=r.title, description=r.description)
+                for r in user.all_custom_rss()]
+        recipes = rss + recipes
+        
     deliveryKey = app.config['DELIVERY_KEY']
     return adv_render_template('adv_delivernow.html', 'deliverNow', user=user, recipes=recipes,
         deliveryKey=deliveryKey)
 
 #设置入站邮件设置，包括邮件白名单和收件箱功能
-@bpAdv.route("/adv/inboundmail", endpoint='AdvInboundMail')
+@bpAdv.route("/advanced/inboundmail", endpoint='AdvInboundMail')
 @login_required()
 def AdvInboundMail(user: KeUser):
     if app.config['DATABASE_URL'] == 'datastore':
@@ -47,10 +60,17 @@ def AdvInboundMail(user: KeUser):
     inbound_email = user.cfg("inbound_email")
     keep_in_email_days = user.cfg("keep_in_email_days")
 
-    return adv_render_template('adv_inboundmail.html', 'inboundMail', user=user, mailHost=mailHost, 
-        inbound_email=inbound_email, keep_in_email_days=keep_in_email_days)
+    #已经上传了钩子文件的白名单条目 {白名单地址: 钩子文件名}
+    hookFiles = {}
+    for wl in user.white_lists():
+        file = get_mail_hook_filename(user, wl.mail)
+        if file:
+            hookFiles[wl.mail] = file
+
+    return adv_render_template('adv_inboundmail.html', 'inboundMail', user=user, mailHost=mailHost,
+        inbound_email=inbound_email, keep_in_email_days=keep_in_email_days, hookFiles=hookFiles)
     
-@bpAdv.post("/adv/inboundmail", endpoint='AdvInboundMailPost')
+@bpAdv.post("/advanced/inboundmail", endpoint='AdvInboundMailPost')
 @login_required()
 def AdvInboundMailPost(user: KeUser):
     wlist = request.form.get('wlist')
@@ -71,21 +91,80 @@ def AdvInboundMailPost(user: KeUser):
         user.set_cfg('keep_in_email_days', keep_in_email_days)
         user.save()
         return redirect(url_for('bpAdv.AdvInboundMail'))
+
+#上传入站邮件钩子文件的AJAX处理函数，针对某个白名单条目
+#和上传自定义recipe一样，先编译检查错误，有错误返回提示，无错误保存到数据库
+@bpAdv.post("/advanced/inboundmail/hook", endpoint='AdvInboundMailHookPost')
+@login_required(forAjax=True)
+def AdvInboundMailHookPost(user: KeUser):
+    mail = request.form.get('mail', '').strip()
+    wlists = [wl.mail.lower() for wl in user.white_lists()]
+    if not mail or (mail.lower() not in wlists):
+        return {'status': _('The mail address is not in the whitelist.')}
+
+    upload = request.files.get('hook_file')
+    data = upload.read() if upload else b''
+    if not data:
+        return {'status': _("Can not read uploaded file.")}
+    if len(data) > MAX_HOOK_FILE_SIZE:
+        return {'status': _('The hook file is too large.')}
+
+    #尝试按照文件内声明的编码解码，参考上传recipe的处理
+    match = re.search(br'coding[:=]\s*([-\w.]+)', data[:200])
+    enc = match.group(1).decode('utf-8') if match else 'utf-8'
+    try:
+        src = data.decode(enc)
+    except Exception:
+        return {'status': _("Failed to decode the file. Please ensure that your file is saved in utf-8 encoding.")}
+
+    try:
+        compile_mail_hook(src, os.path.basename(upload.filename or 'hook.py')) #type:ignore
+    except Exception as e:
+        return {'status': _("Failed to save the hook. Error:") + str(e)}
+
+    filename = os.path.basename(upload.filename or 'hook.py') #type:ignore
+    save_mail_hook(user, mail, src, filename)
+    return {'status': 'ok', 'mail': mail, 'file': filename}
+
+#删除某个白名单条目的入站邮件钩子的AJAX处理函数
+@bpAdv.post("/advanced/inboundmail/hook/delete", endpoint='AdvInboundMailHookDeletePost')
+@login_required(forAjax=True)
+def AdvInboundMailHookDeletePost(user: KeUser):
+    mail = request.form.get('mail', '').strip()
+    if mail and delete_mail_hook(user, mail):
+        return {'status': 'ok'}
+    else:
+        return {'status': _('The hook does not exist.')}
+
+#查看白名单条目对应的钩子文件源码，和查看上传的recipe源码一样的展示方式
+@bpAdv.route("/advanced/inboundmail/hook/view/<mail>", endpoint='AdvViewMailHookSource')
+@login_required()
+def AdvViewMailHookSource(mail: str, user: KeUser):
+    htmlTpl = """<!DOCTYPE html>\n<html><head><meta charset="utf-8"><link rel="stylesheet" href="/static/prism.css" type="text/css"/>
+    <title>{title}</title></head><body class="line-numbers"><pre><code class="language-python">{body}</code></pre>
+    <script type="text/javascript" src="/static/prism.js"></script></body></html>"""
+    filename, src = load_hook_payload(get_mail_hook(user, mail))
+    if src:
+        title = '{} : {}'.format(_('Mail preprocess hook'), xml_escape(mail))
+        return htmlTpl.format(title=title, body=xml_escape(src))
+    else:
+        return htmlTpl.format(title='Error', body=_('The hook does not exist.'))
     
 #删除白名单项目
-@bpAdv.route("/advdel", endpoint='AdvDel')
+@bpAdv.route("/advanceddel", endpoint='AdvDel')
 @login_required()
 def AdvDel(user: KeUser):
     wlist_id = request.args.get('wlist_id')
     if wlist_id:
         dbItem = WhiteList.get_by_id_or_none(wlist_id)
         if dbItem:
+            delete_mail_hook(user, dbItem.mail) #同时删除此白名单条目对应的钩子文件
             dbItem.delete_instance()
         return redirect(url_for("bpAdv.AdvInboundMail") + '#whitelist')
     return redirect(url_for("bpAdmin.Admin"))
 
 #设置归档和分享配置项
-@bpAdv.route("/adv/archive", endpoint='AdvArchive')
+@bpAdv.route("/advanced/archive", endpoint='AdvArchive')
 @login_required()
 def AdvArchive(user: KeUser):
     #jinja自动转义非常麻烦，在代码中先把翻译写好再传过去吧
@@ -107,7 +186,7 @@ def AdvArchive(user: KeUser):
     return adv_render_template('adv_archive.html', 'archive', user=user, appendStrs=appendStrs,
         shareLinks=shareLinks, ke_decrypt=ke_decrypt)
 
-@bpAdv.post("/adv/archive", endpoint='AdvArchivePost')
+@bpAdv.post("/advanced/archive", endpoint='AdvArchivePost')
 @login_required()
 def AdvArchivePost(user: KeUser):
     form = request.form
@@ -167,12 +246,12 @@ def AdvArchivePost(user: KeUser):
     return redirect(url_for("bpAdv.AdvArchive"))
 
 #导入自定义rss订阅列表，当前支持Opml格式
-@bpAdv.route("/adv/import", endpoint='AdvImport')
+@bpAdv.route("/advanced/import", endpoint='AdvImport')
 @login_required()
 def AdvImport(user: KeUser):
     return adv_render_template('adv_import.html', 'import', user=user, tips='')
 
-@bpAdv.post("/adv/import", endpoint='AdvImportPost')
+@bpAdv.post("/advanced/import", endpoint='AdvImportPost')
 @login_required()
 def AdvImportPost(user: KeUser):
     import opml
@@ -229,7 +308,7 @@ def walkOpmlOutline(outline):
         yield obj
 
 #生成自定义rss订阅列表的Opml格式文件，让用户下载保存
-@bpAdv.route("/adv/export", endpoint='AdvExport')
+@bpAdv.route("/advanced/export", endpoint='AdvExport')
 @login_required()
 def AdvExport(user: KeUser):
     #为了简单起见，就不用其他库生成xml，而直接使用字符串格式化生成
@@ -260,12 +339,13 @@ def AdvExport(user: KeUser):
     return send_file(io.BytesIO(opmlFile), mimetype="text/xml", as_attachment=True, download_name="KindleEar_subscription.xml")
     
 #在本地选择一个图片上传做为自定义RSS书籍的封面
-@bpAdv.route("/adv/cover")
+@bpAdv.route("/advanced/cover")
 @login_required()
 def AdvUploadCoverImage(user: KeUser):
     covers = {}
     jsonCovers = ''
     if user:
+        covers['enable'] = user.covers.get('enable', '')
         covers['order'] = user.covers.get('order', 'random')
         for idx in range(7):
             coverName = f'cover{idx}'
@@ -275,17 +355,19 @@ def AdvUploadCoverImage(user: KeUser):
         uploadUrl=url_for("bpAdv.AdvUploadCoverAjaxPost"), covers=covers, jsonCovers=jsonCovers)
 
 #AJAX接口的上传封面图片处理函数
-@bpAdv.post("/adv/cover", endpoint='AdvUploadCoverAjaxPost')
+@bpAdv.post("/advanced/cover", endpoint='AdvUploadCoverAjaxPost')
 @login_required(forAjax=True)
 def AdvUploadCoverAjaxPost(user: KeUser):
     MAX_WIDTH = 832
     MAX_HEIGHT = 1280
     ret = {'status': 'ok'}
+    form = request.form
     covers = user.covers
-    covers['order'] = request.form.get('order', 'random')
+    covers['enable'] = form.get('enable', '')
+    covers['order'] = form.get('order', 'random')
     for idx in range(7):
         coverName = f'cover{idx}'
-        upload = request.files.get(coverName) or request.form.get(coverName)
+        upload = request.files.get(coverName) or form.get(coverName)
         if not upload:
             continue
 
@@ -326,7 +408,7 @@ def AdvUploadCoverAjaxPost(user: KeUser):
     return ret
 
 #在本地选择一个样式文件上传做为所有书籍的样式
-@bpAdv.route("/adv/css", endpoint='AdvUploadCss')
+@bpAdv.route("/advanced/css", endpoint='AdvUploadCss')
 @login_required()
 def AdvUploadCss(user: KeUser):
     extra_css = user.get_extra_css() if user else ''
@@ -335,7 +417,7 @@ def AdvUploadCss(user: KeUser):
         deleteUrl=url_for("bpAdv.AdvDeleteCssAjaxPost"), tips='')
 
 #AJAX接口的上传CSS处理函数
-@bpAdv.post("/adv/css", endpoint='AdvUploadCssAjaxPost')
+@bpAdv.post("/advanced/css", endpoint='AdvUploadCssAjaxPost')
 @login_required(forAjax=True)
 def AdvUploadCssAjaxPost(user: KeUser):
     ret = {'status': 'ok'}
@@ -356,7 +438,7 @@ def AdvUploadCssAjaxPost(user: KeUser):
     return ret
 
 #删除上传的CSS
-@bpAdv.post("/adv/css/delete", endpoint='AdvDeleteCssAjaxPost')
+@bpAdv.post("/advanced/css/delete", endpoint='AdvDeleteCssAjaxPost')
 @login_required(forAjax=True)
 def AdvDeleteCssAjaxPost(user: KeUser):
     ret = {'status': 'ok'}
@@ -368,7 +450,7 @@ def AdvDeleteCssAjaxPost(user: KeUser):
     return ret
 
 #设置在线阅读器的字典
-@bpAdv.route("/adv/dict", endpoint='AdvDict')
+@bpAdv.route("/advanced/dict", endpoint='AdvDict')
 @login_required()
 def AdvDict(user: KeUser):
     from dictionary import all_dict_engines
@@ -384,11 +466,11 @@ def AdvDict(user: KeUser):
         if hasattr(dic, 'refresh'):
             dic.refresh()
     
-    engines = {name: {'databases': klass.databases} for name,klass in all_dict_engines.items()}
+    engines = {name: {'databases': klass.databases, 'mode': klass.mode} for name,klass in all_dict_engines.items()}
     return adv_render_template('adv_dict.html', 'dictionary', user=user, engines=engines, 
         dictParams=dictParams, tips='', langMap=LangMap())
     
-@bpAdv.post("/adv/dict", endpoint='AdvDictPost')
+@bpAdv.post("/advanced/dict", endpoint='AdvDictPost')
 @login_required()
 def AdvDictPost(user: KeUser):
     form = request.form
@@ -405,8 +487,88 @@ def AdvDictPost(user: KeUser):
     user.save()
     return redirect(url_for('bpAdv.AdvDict'))
 
+#打开代理设置页面
+@bpAdv.route("/advanced/proxy", endpoint='AdvProxy')
+@login_required()
+def AdvProxy(user: KeUser):
+    proxy = user.cfg('proxy')
+    return adv_render_template('adv_proxy.html', 'proxy', proxy=proxy, user=user, tips='')
+
+#设置代理地址
+@bpAdv.post("/advanced/proxy", endpoint='AdvProxyPost')
+@login_required()
+def AdvProxyPost(user: KeUser):
+    proxy = request.form.get('proxy', '').lower()
+    if not proxy or proxy.startswith(('http', 'socks')):
+        user.set_cfg('proxy', proxy)
+        user.save()
+        tips = _("Settings Saved!")
+    else:
+        tips = _("The format is invalid.")
+    return adv_render_template('adv_proxy.html', 'proxy', proxy=proxy, user=user, tips=tips)
+
+#测试代理是否正常
+#这个函数很强大，简单的利用都可以用来临时翻墙了
+#登录状态只需要 url 一个参数，否则需要 url, username, key, enc(可选)
+@bpAdv.route("/fwd", methods=['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'])
+def AdvFwdRoute():
+    #要不是正在登录状态，要不就传递用户名和分享密码
+    user = get_login_user()
+    args = request.args
+    url = args.get('url')
+    enc = args.get('enc')
+    if not user:
+        name = args.get('username')
+        user = KeUser.get_or_none(KeUser.name == name) if name else None
+        if user and user.share_links.get('key') != args.get('key'):
+            user = None
+
+    if not url or not user:
+        return _("Some parameters are missing or wrong."), 400
+
+    #为避免url泄露，可以在客户端简单"加密"
+    if enc == 'base64':
+        url = base64.b64decode(url).decode('utf-8')
+    elif enc == 'ke':
+        url = ke_decrypt(url, user.cfg('secret_key'))
+
+    UrlOpener.set_proxy(user.cfg('proxy'))
+    opener = UrlOpener(timeout=(5, 30)) #(connect time, read time)
+    url = unquote(url) if '%' in url else url
+    if not url.startswith('http'):
+        url = 'https://' + url
+    inHeaders = {k: v for k, v in request.headers if k != 'Host'}
+    inHeaders['Connection'] = 'close' #禁止长连接
+    try:
+        if request.method == 'GET':
+            resp = opener.get(url, headers=inHeaders, stream=True)
+        elif request.method == 'POST':
+            resp = opener.post(url, data=request.data, headers=inHeaders, stream=True)
+        elif request.method == 'PUT':
+            resp = opener.put(url, data=request.data, headers=inHeaders, stream=True)
+        elif request.method == 'DELETE':
+            resp = opener.delete(url, headers=inHeaders, stream=True)
+        elif request.method == 'OPTIONS': # 如果是 OPTIONS 请求，返回服务器支持的方法
+            return Response(status=200, headers={'Allow': 'GET, POST, PUT, DELETE, OPTIONS'})
+        #print(f'Fetched: {len(resp.content)}') #TODO
+        headers = dict(resp.headers)
+
+        #如果使用.content返回，需要去掉Content-Encoding
+        #使用.raw.read()返回原始二进制则需要保留Content-Encoding让客户端解压
+        for item in ['Transfer-Encoding', 'Content-Security-Policy', 'Content-Security-Policy-Report-Only']: #'Content-Encoding'
+            headers.pop(item, None)
+            headers.pop(item.lower(), None)
+        
+        headers['Access-Control-Allow-Origin'] = '*'
+        headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        return Response(resp.raw.read(), status=resp.status_code, headers=headers)
+    except Exception as e:
+        print(f'Unexpected error: {str(e)}') #TODO
+        return f"Unexpected error: {str(e)}", 500
+    
 #设置calibre的参数
-@bpAdv.route("/adv/calibre", endpoint='AdvCalibreOptions')
+@bpAdv.route("/advanced/calibre", endpoint='AdvCalibreOptions')
 @login_required()
 def AdvCalibreOptions(user: KeUser):
     calibreOptions = user.custom.get('calibre_options', {})
@@ -414,7 +576,7 @@ def AdvCalibreOptions(user: KeUser):
     return adv_render_template('adv_calibre_options.html', 'calibreOptions', options=options, user=user)
 
 #设置calibre的参数
-@bpAdv.post("/adv/calibre", endpoint='AdvCalibreOptionsPost')
+@bpAdv.post("/advanced/calibre", endpoint='AdvCalibreOptionsPost')
 @login_required()
 def AdvCalibreOptionsPost(user: KeUser):
     tips = ''
@@ -456,7 +618,7 @@ def DbImage(id_: str, user: KeUser):
 @login_required()
 def AdvOAuth2(authType: str, user: KeUser):
     if authType.lower() != 'pocket':
-        return 'Auth Type ({}) Unsupported!'.format(authType)
+        return 'Auth Type ({}) Unsupported!'.format(escape(authType))
         
     cbUrl = urljoin(app.config['APP_DOMAIN'], '/oauth2cb/pocket?redirect={}'.format(url_for("bpAdv.AdvArchive")))
     pocket = Pocket(app.config['POCKET_CONSUMER_KEY'], cbUrl)
@@ -475,7 +637,7 @@ def AdvOAuth2(authType: str, user: KeUser):
 @login_required()
 def AdvOAuth2Callback(authType: str, user: KeUser):
     if authType.lower() != 'pocket':
-        return 'Auth Type ({}) Unsupported!'.format(authType)
+        return 'Auth Type ({}) Unsupported!'.format(escape(authType))
         
     pocket = Pocket(app.config['POCKET_CONSUMER_KEY'])
     request_token = session.get('pocket_request_token', '')

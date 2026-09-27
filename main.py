@@ -4,7 +4,8 @@
 # Visit <https://github.com/cdhigh/KindleEar> for the latest version
 # Author: cdhigh <https://github.com/cdhigh>
 
-__Version__ = '3.1.0'
+__Version__ = '3.5.2'
+__BuildDate__ = '20260927'
 
 import os, sys, builtins, logging
 from application.lib import clogging
@@ -24,7 +25,9 @@ if not calibre_log.handlers:
 builtins.__dict__['default_log'] = calibre_log
 builtins.__dict__['appDir'] = appDir
 builtins.__dict__['appVer'] = __Version__
+builtins.__dict__['appBuildDate'] = __BuildDate__
 sys.path.insert(0, os.path.join(appDir, 'application', 'lib'))
+sys.path.insert(0, appDir)
 
 #合并config.py配置信息到os.environ，如果对应环境变量存在，则不会覆盖
 def set_env():
@@ -33,7 +36,7 @@ def set_env():
     keys = ['APP_ID', 'APP_DOMAIN', 'SERVER_LOCATION', 'DATABASE_URL', 'TASK_QUEUE_SERVICE',
         'TASK_QUEUE_BROKER_URL', 'KE_TEMP_DIR', 'DOWNLOAD_THREAD_NUM', 'ALLOW_SIGNUP',
         'SECRET_KEY', 'DELIVERY_KEY', 'ADMIN_NAME', 'POCKET_CONSUMER_KEY', 'HIDE_MAIL_TO_LOCAL', 
-        'LOG_LEVEL', 'EBOOK_SAVE_DIR', 'DICTIONARY_DIR']
+        'LOG_LEVEL', 'EBOOK_SAVE_DIR', 'DICTIONARY_DIR', 'DEMO_MODE']
     for key in keys:
         cfgMap[key] = os.getenv(key) if key in os.environ else getattr(config, key)
         if (key == 'APP_DOMAIN') and not cfgMap[key].startswith('http'):

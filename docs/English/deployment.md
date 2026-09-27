@@ -36,19 +36,7 @@ kindleear/tools/gae_deploy.sh
 kindleear/tools/gae_deploy.sh B1,1,t2,15m
 ```
 
-**Note 2:** If you want to trim the built-in Recipe file to keep only the languages you need, you can add a line before the `kindleear/tools/gae_deploy.sh` command.    
-If you don't want any of the built-in recipes, you can directly delete `application/recipes/*.xml, *.zip`.
-
-```bash
-# Modify the list after trim_recipes.py to keep desired languages.
-rm -rf kindleear && \
-git clone --depth 1 https://github.com/cdhigh/kindleear.git && \
-chmod +x kindleear/tools/gae_deploy.sh && \
-python kindleear/tools/trim_recipes.py en,zh && \
-kindleear/tools/gae_deploy.sh B1,1,t2,15m
-```
-
-3. Refer to the [Other Instructions](#gae_other_instructions) section for additional information, such as troubleshooting the 'Unauthorized sender' issue.    
+2. Refer to the [Other Instructions](#gae_other_instructions) section for additional information, such as troubleshooting the 'Unauthorized sender' issue.    
 
 
 
@@ -183,17 +171,22 @@ If HTTPS for Nginx is needed, copy the SSL certificate fullchain.pem/privkey.pem
 4. Method for Updating Using Docker Compose     
 
 ```bash
-sudo docker compose pull
-sudo docker compose up -d --remove-orphans
-sudo docker image prune
+sudo docker compose pull && \
+sudo docker compose up -d --remove-orphans && \
+sudo docker image prune -f
 ```
 
 
 5. To check log files
-
+5.1. Default   
 ```bash
 tail -n 100 ./data/gunicorn.error.log
 tail -n 100 ./data/gunicorn.access.log
+```
+
+5.2. After setting the environment variable: `USE_DOCKER_LOGS="yes"`   
+```bash
+docker logs container_name
 ```
 
 
@@ -216,6 +209,8 @@ sudo usermod -aG docker your-username
       3.2.2. In the "Volume Settings", add a folder mapped to `/data`, for example, map `/docker/data` to `/data`, with "Read/Write" permissions.
 4. After starting, access it via http://ip:8001.
 5. If you need the link sharing feature, you can set the environment variable `APP_DOMAIN`.   
+6. To view KindleEar's error logs through the Synology web management interface, you can set the environment variable `USE_DOCKER_LOGS="yes"`.    
+
 
 
 <a id="oracle-cloud"></a>
@@ -283,7 +278,7 @@ chmod -R 775 ~    #nginx user www-data read static resource
 cd kindleear
 virtualenv --python=python3 venv  #create virtual environ
 vim ./config.py  #start to modify some config items
-python3 ./tools/update_req.py #update requirements.txt
+python3 ./tools/update_req.py docker #update requirements.txt
 
 source ./venv/bin/activate  #activate virtual environ
 pip install -r requirements.txt #install dependencies

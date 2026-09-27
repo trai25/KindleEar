@@ -35,19 +35,7 @@ kindleear/tools/gae_deploy.sh
 kindleear/tools/gae_deploy.sh B1,1,t2,15m
 ```
 
-**注2：** 如果想精简内置Recipe文件，仅保留你需要的语种，可以在 `kindleear/tools/gae_deploy.sh` 命令前增加一行。
-假如内置的Recipe你一个都不想要，可以直接删除 `application/recipes/*.xml, *.zip`。      
-
-```bash
-# Modify the list after trim_recipes.py to keep desired languages.
-rm -rf kindleear && \
-git clone --depth 1 https://github.com/cdhigh/kindleear.git && \
-chmod +x kindleear/tools/gae_deploy.sh && \
-python kindleear/tools/trim_recipes.py en,zh && \
-kindleear/tools/gae_deploy.sh B1,1,t2,15m
-```
-
-3. 如需要GAE部署的更多信息，请参考 [其他说明](#gae_other_instructions) 章节，比如怎么解决 "Unauthorized sender" 错误等。    
+2. 如需要GAE部署的更多信息，请参考 [其他说明](#gae_other_instructions) 章节，比如怎么解决 "Unauthorized sender" 错误等。    
 
 
 
@@ -178,18 +166,23 @@ sudo docker compose -f docker-compose-nginx.yml up -d
 4. 使用docker-compose的版本更新方法      
 
 ```bash
-sudo docker compose pull
-sudo docker compose up -d --remove-orphans
-sudo docker image prune
+sudo docker compose pull && \
+sudo docker compose up -d --remove-orphans && \
+sudo docker image prune -f
 ```
 
 
 5. 需要查询日志文件
-
+5.1. 默认
 ```bash
 tail -n 100 ./data/gunicorn.error.log
 tail -n 100 ./data/gunicorn.access.log
 ```
+5.2. 设置环境变量后： `USE_DOCKER_LOGS="yes"`
+```bash
+docker logs container_name
+```
+
 
 6. 如果不喜欢每次输入docker都使用sudo，可以将你的账号添加到docker用户组
 
@@ -210,6 +203,8 @@ sudo usermod -aG docker your-username
     3.2.2 在"存储空间设置"里面添加一个文件夹映射到 `/data`，比如 `/docker/data` 映射到 `/data`，权限为"读取/写入"
 4. 启动完成后使用 http://ip:8001 访问。  
 5. 如果需要链接分享功能，可以设置环境变量 `APP_DOMAIN`。 
+6. 如果希望使用群晖网页管理页面的logs查看KindleEar的异常记录，可以设置环境变量 `USE_DOCKER_LOGS="yes"`。   
+
 
 
 <a id="oracle-cloud"></a>
@@ -275,7 +270,7 @@ sudo usermod -aG ubuntu www-data #or add nginx www-data to my group ubuntu
 cd kindleear
 virtualenv --python=python3 venv  #create virtual environ
 vim ./config.py  #start to modify some config items
-python3 ./tools/update_req.py #update requirements.txt
+python3 ./tools/update_req.py docker #update requirements.txt
 
 source ./venv/bin/activate  #activate virtual environ
 pip install -r requirements.txt #install dependencies
@@ -297,6 +292,7 @@ sudo nginx -t #test if nginx config file is correct
 
 #set gunicorn auto start
 sudo cp ./tools/nginx/gunicorn.service /usr/lib/systemd/system/gunicorn.service
+sudo chmod 644 /usr/lib/systemd/system/gunicorn.service
 sudo systemctl daemon-reload
 sudo systemctl start gunicorn
 sudo systemctl status gunicorn

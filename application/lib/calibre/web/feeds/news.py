@@ -19,7 +19,7 @@ from calibre.ebooks.metadata.opf2 import OPFCreator
 from calibre.ebooks.metadata.toc import TOC
 from calibre.ptempfile import PersistentTemporaryFile, PersistentTemporaryDirectory
 from calibre.utils.img import save_cover_data_to
-from calibre.utils.date import now as nowf
+from calibre.utils.date import now as nowf, utcnow
 from calibre.utils.localization import canonicalize_lang, ngettext
 from calibre.utils.threadpool import NoResultsPending, ThreadPool, WorkRequest
 from calibre.web import Recipe
@@ -34,7 +34,7 @@ from urlopener import UrlOpener
 from requests_file import LocalFileAdapter
 from filesystem_dict import FsDictStub
 from application.back_end.db_models import LastDelivered
-from application.utils import loc_exc_pos
+from application.ke_utils import loc_exc_pos, extractHyperLink
 
 MASTHEAD_SIZE = (600, 60)
 DEFAULT_MASTHEAD_IMAGE = 'mastheadImage.gif'
@@ -144,7 +144,7 @@ class BasicNewsRecipe(Recipe):
 
     #: Number of simultaneous downloads. Set to 1 if the server is picky.
     #: Automatically reduced to 1 if :attr:`BasicNewsRecipe.delay` > 0
-    simultaneous_downloads = 5
+    simultaneous_downloads = 3
 
     #: Timeout for fetching files from server in seconds
     timeout                = 60
@@ -337,7 +337,7 @@ class BasicNewsRecipe(Recipe):
     #:     ]
     #:
     #: will remove everything from `<!--Article ends here-->` to `</body>`.
-    preprocess_regexps    = []
+    preprocess_regexps    = [(re.compile(r'\r\n?|\n'), ''),]
 
     #: The CSS that is used to style the templates, i.e., the navigation bars and
     #: the Tables of Contents. Rather than overriding this variable, you should
@@ -441,6 +441,7 @@ class BasicNewsRecipe(Recipe):
     # set by worker.py
     translator = {}
     tts = {}
+    summarizer = {}
     delivery_reason = 'cron'
 
     # See the built-in recipes for examples of these settings.
@@ -969,7 +970,7 @@ class BasicNewsRecipe(Recipe):
 
         if self.test:
             self.max_articles_per_feed = self.test[1]
-            self.simultaneous_downloads = min(4, self.simultaneous_downloads)
+            self.simultaneous_downloads = min(3, self.simultaneous_downloads)
 
         if self.debug:
             self.verbose = True
@@ -1070,7 +1071,7 @@ class BasicNewsRecipe(Recipe):
         #    for x in soup.find_all(attrs={attr: True}):
         #        del x[attr]
 
-        for bad_tag in list(soup.find_all(['base', 'iframe', 'canvas', 'embed', 
+        for bad_tag in list(soup.find_all(['base', 'iframe', 'canvas', 'embed', 'source',
             'command', 'datalist', 'video', 'audio', 'noscript', 'link', 'meta', 'button'])):
             bad_tag.extract()
         
@@ -1120,27 +1121,31 @@ class BasicNewsRecipe(Recipe):
                 if not h_tag.get_text(strip=True):
                     h_tag.string = title
 
-        #job_info.article.url才是真实的url，对于内嵌内容RSS，job_info.url为一个临时文件名
-        self.append_share_links(soup, url=job_info.article.url)
-        
-        ans = self.postprocess_html(soup, first_fetch)
+        soup = self.postprocess_html(soup, first_fetch)
 
         # Nuke HTML5 tags
-        for x in ans.find_all(['article', 'aside', 'header', 'footer', 'nav', 'main',
-            'figcaption', 'figure', 'section', 'time']):
+        for x in soup.find_all(['article', 'aside', 'header', 'footer', 'nav', 'main',
+            'figcaption', 'figure', 'section']):
             x.name = 'div'
+        for x in soup.find_all(['bdo', 'kbd', 'mark', 'time']):
+            x.name = 'span'
 
-        #for x in ans.find_all('mark'):
-        #    x.name = 'strong'
-
-        #If tts need, tts propery is set by WorkerImpl
+        #If tts need, 'tts' propery is set by WorkerImpl
         tts_enable = self.tts.get('enable')
         if tts_enable:
             self.audiofy_html(soup, title, job_info)
 
-        #If translation need, translator propery is set by WorkerImpl
+        #If ai-summarization need, 'summarizer' propery is set by WorkerImpl
+        if self.summarizer.get('enable'):
+            self.summarize_html(soup, title)
+
+        #If translation need, 'translator' propery is set by WorkerImpl
         if self.translator.get('enable') and (tts_enable != 'audio_only'):
             self.translate_html(soup, title)
+
+        #添加分享链接，需要在翻译之后，避免翻译新添加的链接文字
+        #job_info.article.url才是真实的url，对于内嵌内容RSS，job_info.url为一个临时文件名
+        self.append_share_links(soup, url=job_info.article.url)
 
         if job_info:
             try:
@@ -1152,8 +1157,8 @@ class BasicNewsRecipe(Recipe):
                 self.log.exception('Failed to get article object for postprocessing')
                 pass
             else:
-                self.populate_article_metadata(article, ans, first_fetch)
-        return ans
+                self.populate_article_metadata(article, soup, first_fetch)
+        return soup
 
     #在文章末尾添加分享链接
     def append_share_links(self, soup, url):
@@ -1314,7 +1319,7 @@ class BasicNewsRecipe(Recipe):
             from calibre.utils.cleantext import clean_xml_chars
 
             # Truncating the string could cause a dangling UTF-16 half-surrogate, which will cause lxml to barf, clean it
-            ans = clean_xml_chars(ans) + '\u2026'
+            ans = clean_xml_chars(ans) + '…'
         return ans
 
     #生成Feed对应的html内容，一个Feed就是根据一个Rss xml生成的html，里面会有多篇文章
@@ -1533,9 +1538,9 @@ class BasicNewsRecipe(Recipe):
                 self.jobs.append(req)
 
         self.jobs_done = 0
-        trans_enable = self.translator.get('enable') or self.tts.get('enable')
-        #如果翻译使能，则不能使用多线程，否则容易触发流量告警导致IP被封锁
-        if (self.simultaneous_downloads > 1) and not trans_enable:
+        ai_enable = self.translator.get('enable') or self.tts.get('enable') or self.summarizer.get('enable')
+        #如果翻译/AI使能，则不能使用多线程，否则容易触发流量告警导致IP被封锁
+        if (self.simultaneous_downloads > 1) and not ai_enable:
             tp = ThreadPool(self.simultaneous_downloads)
             for req in self.jobs:
                 tp.putRequest(req, block=True, timeout=0)
@@ -1905,7 +1910,7 @@ class BasicNewsRecipe(Recipe):
             self.aborted_articles.append((request.feed, request.article))
         else:
             self.log.error('Failed to download article:{} from {}'.format(request.article.title, request.article.url))
-            self.log.debug(traceback)
+            self.log.info(traceback)
             self.log.debug('\n')
             self.failed_downloads.append((request.feed, request.article, traceback))
 
@@ -2059,31 +2064,44 @@ class BasicNewsRecipe(Recipe):
     #调用在线翻译服务平台，翻译html
     def translate_html(self, soup, title):
         from ebook_translator import HtmlTranslator
-        translator = HtmlTranslator(self.translator, self.simultaneous_downloads)
         self.log.info(f'Translating html [{title}]')
+        translator = HtmlTranslator(self.translator, self.simultaneous_downloads)
         translator.translate_soup(soup)
 
-    #翻译Feed的title，toc时用到
+    #翻译Feed的title/text_summary，toc时用到
     def translate_titles(self, feeds):
         from ebook_translator import HtmlTranslator
         translator = HtmlTranslator(self.translator, self.simultaneous_downloads)
         position = self.translator.get('position', 'below')
-        titles = []
+        texts = []
+
+        #内嵌函数
+        def _addTextItem(obj, attr):
+            texts.append({'text': getattr(obj, attr, None), 'obj': obj, 'attr': attr})
+
         for feed in feeds:
-            titles.append({'text': feed.title, 'obj': feed})
+            _addTextItem(feed, 'title')
+            _addTextItem(feed, 'description')
             for article in feed:
-                titles.append({'text': article.title, 'obj': article})
-        newTitles = translator.translate_text(titles)
-        for item in [e for e in newTitles if not e['error']]:
+                _addTextItem(article, 'title')
+                _addTextItem(article, 'text_summary')
+                
+        newTitles = translator.translate_text(texts)
+        for item in newTitles:
+            if item['error'] or item['translated'] == item['text']:
+                continue
+                
+            obj = item['obj']
+            attr = item['attr']
+            sep = ' ' if attr == 'title' else '<br/>'
             if position in ('below', 'right'):
-                item['obj'].title = item['text'] + ' ' + item['translated']
+                setattr(obj, attr, item['text'] + sep + item['translated'])
             elif position in ('above', 'left'):
-                item['obj'].title = item['translated'] + ' ' + item['text']
+                setattr(obj, attr, item['translated'] + sep + item['text'])
             else: #replace
-                item['obj'].title = item['translated']
+                setattr(obj, attr, item['translated'])
 
     #调用在线TTS服务平台，将html转为语音
-    #每个音频片段都会调用一次callback(audioDict, title, feed_index, article_index)
     def audiofy_html(self, soup, title, job_info):
         from ebook_tts import HtmlAudiolator
         audiolator = HtmlAudiolator(self.tts)
@@ -2109,6 +2127,12 @@ class BasicNewsRecipe(Recipe):
                     self.log.warning(f'Failed to write "{filename}": {e}')
         else:
             self.log.warning(f'Failed to audiofy "{title}": {ret["error"]}')
+
+    #调用AI服务给html写一个摘要
+    def summarize_html(self, soup, title):
+        from ebook_summarizer import HtmlSummarizer
+        self.log.info(f'Summarizing html [{title}]')
+        HtmlSummarizer(self.summarizer).summarize_soup(soup)
 
 class CustomIndexRecipe(BasicNewsRecipe):
 
@@ -2209,7 +2233,7 @@ class WebPageUrlNewsRecipe(BasicNewsRecipe):
         added = set()
         #这里oldest_article和其他的recipe不一样，这个参数表示在这个区间内不会重复推送
         oldestSeconds = 24 * 3600 * self.oldest_article
-        now = datetime.datetime.utcnow()
+        now = utcnow().replace(tzinfo=None)
         for obj in main_urls: #type:ignore
             main_title, main_url = (self.title, obj) if isinstance(obj, str) else obj
             feed = Feed()
@@ -2256,7 +2280,7 @@ class WebPageUrlNewsRecipe(BasicNewsRecipe):
             return []
 
         soup = BeautifulSoup(resp.text, 'lxml')
-        
+            
         articles = []
         for rules in self.url_extract_rules:
             for item in get_tags_from_rules(soup, rules):
@@ -2265,7 +2289,9 @@ class WebPageUrlNewsRecipe(BasicNewsRecipe):
                 for tag in item:
                     title = ' '.join(tag.stripped_strings) or main_title
                     url = tag.attrs.get('href', None)
-                    if not url.startswith('http'):
+                    if url.startswith('javascript:'): #如果是javascript
+                        url = extractHyperLink(url)
+                    elif not url.lower().startswith('http'):
                         url = urljoin(main_url, url)
                     if title and url:
                         articles.append((title, url))
@@ -2317,7 +2343,7 @@ class CalibrePeriodical(BasicNewsRecipe):
         br.select_form(name='login')
         br['username'] = self.username
         br['password'] = self.password
-        raw = br.submit_selected().content
+        raw = br.submit().read()
         if 'href="/my-account"' not in raw:
             raise LoginFailed(
                     _('Failed to log in, check your username and password for'

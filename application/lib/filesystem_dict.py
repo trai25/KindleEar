@@ -70,7 +70,7 @@ class FileSystemDict(dict):
             file = key[1:] if key.startswith('/') else key
             file_path = os.path.join(path, file)
             file_dir = os.path.dirname(file_path)
-            if not os.path.exists(file_dir):
+            if not os.path.isdir(file_dir):
                 os.makedirs(file_dir)
             with open(file_path, 'wb') as f:
                 f.write(content)
@@ -145,7 +145,7 @@ class FsDictStub(object):
             self.fs_dict[path] = data
         else:
             dir_ = os.path.dirname(path)
-            if not os.path.exists(dir_):
+            if not os.path.isdir(dir_):
                 os.makedirs(dir_)
             with open(path, mode) as f:
                 f.write(data)
@@ -181,16 +181,26 @@ class FsDictStub(object):
     mkdir = makedirs
 
     def exists(self, path):
+        if not path:
+            return False
         path = os.path.join(self.path, path)
         return self.fs_dict.exists(path) if self.fs_dict else os.path.exists(path)
+
     def isfile(self, path):
+        if not path:
+            return False
         path = os.path.join(self.path, path)
         return self.fs_dict.isfile(path) if self.fs_dict else os.path.isfile(path)
+
     def isdir(self, path):
+        if not path:
+            return False
         path = os.path.join(self.path, path)
         return self.fs_dict.isdir(path) if self.fs_dict else os.path.isdir(path)
+
     def __str__(self):
         return self.path
+        
     def clear(self):
         if self.fs_dict:
             self.fs_dict.clear()

@@ -94,6 +94,16 @@ function MakeAjaxRequest(url, method, data, callback) {
   });
 }
 
+///[start] base.html
+//选择其他语种进行页面显示
+function handleLanguageChange() {
+  const lang = $('#languageSelect').val();
+  MakeAjaxRequest(`/setlocale`, "POST", {'lang': lang}, function (resp) {
+    location.reload(); //刷新页面
+  });
+}
+///[end] base.html
+
 ///[start] my.html
 var show_menu_box = false;
 
@@ -108,65 +118,74 @@ function RegisterHideHambClick() {
 
 //连接服务器获取内置recipe列表，并按照语言建立一个字典all_builtin_recipes，字典键为语言，值为信息字典列表
 function FetchBuiltinRecipesXml() {
-  var hasUserLangRss = false;
-  var hasEnRss = false;
+  //添加上传的recipe的语言代码
+  var langPick = $("#language_pick");
+  my_uploaded_recipes.forEach(item => {
+    var lang = item['language'];
+    if (lang && !all_builtin_recipes[lang]) {
+      all_builtin_recipes[lang] = [];
+      langPick.append($('<option value="{0}">{1}</option>'.format(lang, LanguageName(lang))));
+    }
+  });
+
   //这个是静态文件，flask和浏览器会通过etag来自动使用本地缓存
   $.get('/recipes/builtin_recipes.xml', function(xml) {
+    //这里面的代码是异步执行的
+    var hasUserLangRss = false;
+    var hasEnRss = false;
     var userLang = BrowserLanguage();
+    var langPick = $("#language_pick");
     $(xml).find("recipe").each(function() {
-      var title=$(this).attr("title");
-      var language=$(this).attr("language").toLowerCase();
-      var subs=$(this).attr("needs_subscription");
+      var title = $(this).attr("title");
+      var lang = $(this).attr("language").toLowerCase();
+      var subs = $(this).attr("needs_subscription");
       subs = ((subs == 'yes') || (subs == 'optional')) ? true : false;
-      var description=$(this).attr("description").substring(0, 200);
-      var id=$(this).attr("id");
+      var description = $(this).attr("description").substring(0, 200);
+      var id = $(this).attr("id");
 
       //忽略各国语言方言，仅取'_'前的部分
-      language = language.replace('-', '_');
-      var dashIndex = language.indexOf('_');
+      lang = lang.replace('-', '_');
+      var dashIndex = lang.indexOf('_');
       if (dashIndex != -1) {
-        language = language.substring(0, dashIndex);
+        lang = lang.substring(0, dashIndex);
       }
-      if (language == userLang) {
+      if (lang == userLang) {
         hasUserLangRss = true;
       }
-      if (language == 'en') {
+      if (lang == 'en') {
         hasEnRss = true;
       }
 
-      if (!all_builtin_recipes[language]) {
-        all_builtin_recipes[language] = [];
-        var $newLangOpt = $('<option value="{0}">{1}</option>'.format(language, LanguageName(language)));
-        $("#language_pick").append($newLangOpt);
+      if (!all_builtin_recipes[lang]) {
+        all_builtin_recipes[lang] = [];
+        langPick.append($('<option value="{0}">{1}</option>'.format(lang, LanguageName(lang))));
       }
-      all_builtin_recipes[language].push({title: title, description: description, needs_subscription: subs, id: id});
+      all_builtin_recipes[lang].push({title: title, description: description, needs_subscription: subs, id: id});
     });
+
     //自动触发和用户浏览器同样语种的选项
+    var langItem;
+    var langEnItem = langPick.find("option[value='en']");
     if (hasUserLangRss) {
-      $("#language_pick").find("option[value='{0}']".format(userLang)).attr("selected", true);
-      $("#language_pick").val(userLang).trigger('change');
+      langItem = langPick.find("option[value='{0}']".format(userLang));
+      langItem.prependTo(langPick);
     } else if (hasEnRss) { //如果有英语则选择英语源
-      $("#language_pick").find("option[value='en']").attr("selected", true);
-      $("#language_pick").val('en').trigger('change');
+      langItem = langEnItem;
     } else { //最后只能选择第一个语言
-      var firstChild = $("#language_pick").children().first();
-      firstChild.attr("selected", true);
-      firstChild.trigger('change');
+      langItem = $("#language_pick").children().first();
+    }
+    if (langItem) {
+      langItem.prependTo(langPick); //英语或浏览器语言置顶
+      langItem.attr("selected", true);
+      langItem.trigger('change');
+    }
+    if (langEnItem) {
+      langEnItem.prependTo(langPick); //英语置顶
     }
   }).fail(function(jqXHR, textStatus, errorThrown) {
     console.log("Failed to fetch '/recipes/builtin_recipes.xml': " + errorThrown);
   });
 
-  //添加上传的recipe中存在，但是内置库不存在的语言代码
-  my_uploaded_recipes.forEach(item => {
-    var language = item['language'];
-    if (language && !all_builtin_recipes[language]) {
-      all_builtin_recipes[language] = [];
-      var $newLangOpt = $('<option value="{0}">{1}</option>'.format(language, LanguageName(language)));
-      $("#language_pick").append($newLangOpt);
-    }
-  });
-  
   PopulateLibrary('');
 }
 
@@ -229,13 +248,14 @@ function AppendRecipeToLibrary(div, id) {
   hamb_arg = [];
   var fTpl = "{0}('{1}','{2}')";
   if (id.startsWith("upload:")) { //增加汉堡按钮弹出菜单代码
-    hamb_arg.push({klass: 'btn-A', title: i18n.delete, icon: 'icon-delete', act: fTpl.format('DeleteUploadRecipe', id, title)});
     hamb_arg.push({klass: 'btn-E', title: i18n.share, icon: 'icon-share', act: fTpl.format('StartShareRss', id, title)});
   }
   hamb_arg.push({klass: 'btn-B', title: i18n.viewSrc, icon: 'icon-source', act: "/viewsrc/" + id.replace(':', '__')});
   hamb_arg.push({klass: 'btn-C', title: i18n.subscriSep, icon: 'icon-push', act: fTpl.format('SubscribeRecipe', id, '1')});
   hamb_arg.push({klass: 'btn-D', title: i18n.subscribe, icon: 'icon-subscribe', act: fTpl.format('SubscribeRecipe', id, '0')});
-  
+  if (id.startsWith("upload:")) { //增加汉堡按钮弹出菜单代码
+    hamb_arg.push({klass: 'btn-A', title: i18n.delete, icon: 'icon-delete', act: fTpl.format('DeleteUploadRecipe', id, title)});
+  }
   row_str.push(AddHamburgerButton(hamb_arg));
   row_str.push('</div>');
   var new_item = $(row_str.join(''));
@@ -300,6 +320,9 @@ function PopulateMyCustomRss() {
     if (rss.tts_enable) {
       row_str.push('<sup>{0}</sup>'.format(i18n.abbrTts));
     }
+    if (rss.summary_enable) {
+      row_str.push('<sup>{0}</sup>'.format(i18n.abbrAi));
+    }
     row_str.push('</div><div class="summaryRow"><a target="_blank" href="{0}">'.format(url));
     if (url.length > 100) {
       row_str.push(url.substring(0, 100) + '...');
@@ -313,6 +336,7 @@ function PopulateMyCustomRss() {
     //汉堡按钮弹出菜单代码
     var fTpl = "{0}('{1}','{2}')";
     var fTplAll = "{0}(event,'{1}','{2}','{3}',{4})"; //id,title,url,isfulltext
+    hamb_arg.push({klass: 'btn-H', title: i18n.aiSummarizer, icon: 'icon-ai', act: "/summarizer/" + id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-F', title: i18n.biTranslator, icon: 'icon-translate', act: "/translator/" + id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-G', title: i18n.tts, icon: 'icon-tts', act: "/tts/" + id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-D', title: i18n.share, icon: 'icon-share', act: fTpl.format('StartShareRss', id, title)});
@@ -330,9 +354,17 @@ function PopulateMyCustomRss() {
 function PopulateMySubscribed() {
   var $div = $('#mysubscribed');
   $div.empty();
-  for (var idx = 0; idx < my_booked_recipes.length; idx++) {
+  var bookNum = my_booked_recipes.length;
+  if (bookNum > 0) {
+    $('#legend_mysubscribed').show();
+    $div.show();
+  } else {
+    $('#legend_mysubscribed').hide();
+    $div.hide();
+  }
+  
+  for (var idx = 0; idx < bookNum; idx++) {
     var recipe = my_booked_recipes[idx];
-    
     var title = escapeXml(recipe.title);
     var desc = recipe.description;
     var need_subs = recipe.needs_subscription;
@@ -354,6 +386,9 @@ function PopulateMySubscribed() {
     if (recipe.tts_enable) {
       row_str.push('<sup>{0}</sup>'.format(i18n.abbrTts));
     }
+    if (recipe.summary_enable) {
+      row_str.push('<sup>{0}</sup>'.format(i18n.abbrAi));
+    }
     row_str.push('</div><div class="summaryRow">');
     if (desc.length > 100) {
       row_str.push(desc.substring(0, 100) + '...');
@@ -369,6 +404,7 @@ function PopulateMySubscribed() {
     if (need_subs) {
         hamb_arg.push({klass: 'btn-C', title: i18n.subscriptionInfo, icon: 'icon-key', act: fTpl.format('AskForSubscriptionInfo', recipe_id, recipe.account)});
     }
+    hamb_arg.push({klass: 'btn-H', title: i18n.aiSummarizer, icon: 'icon-ai', act: "/summarizer/" + recipe_id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-F', title: i18n.biTranslator, icon: 'icon-translate', act: "/translator/" + recipe_id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-G', title: i18n.tts, icon: 'icon-tts', act: "/tts/" + recipe_id.replace(':', '__')});
     if (recipe_id.startsWith("upload:")) { //只有自己上传的recipe才能分享，内置的不用分享
@@ -376,7 +412,7 @@ function PopulateMySubscribed() {
     }
     hamb_arg.push({klass: 'btn-B', title: i18n.viewSrc, icon: 'icon-source', act: "/viewsrc/" + recipe_id.replace(':', '__')});
     hamb_arg.push({klass: 'btn-E', title: i18n.customizeDelivTime, icon: 'icon-schedule', act: fTpl.format('ScheduleRecipe', recipe_id, title)});
-    hamb_arg.push({klass: 'btn-A', title: i18n.unsubscribe, icon: 'icon-unsubscribe', act: fTpl.format('UnsubscribeRecipe', recipe_id, title)});
+    hamb_arg.push({klass: 'btn-A', title: i18n.unsubscribe, icon: 'icon-delete', act: fTpl.format('UnsubscribeRecipe', recipe_id, title)});
     row_str.push(AddHamburgerButton(hamb_arg));
     row_str.push('</div>');
     //console.log(row_str.join(''));
@@ -790,7 +826,7 @@ function ShowShareDialog(id, title){
     'no','oc','oj','or','om','os','pa','fa','pi','pl','pt','ps','qu','rm','ro','ro','rn','ru','sg','sa','si','sk','sk',
     'sl','se','sm','sn','sd','so','st','es','sq','sc','sr','ss','su','sw','sv','ty','ta','tt','te','tg','tl','th','bo',
     'ti','to','tn','ts','tk','tr','tw','ug','uk','ur','uz','ve','vi','vo','cy','wa','wo','xh','yi','yo','za','zh','zu'];
-  var languages = ['en','fr','zh','es','pt','de','it','ja','ru','tr','ko','ar','cs','nl','el','hi','ms','bn','fa','ur',
+  var languages = ['en','zh','es','fr','pt','de','it','ja','ru','tr','ko','ar','cs','nl','el','hi','ms','bn','fa','ur',
     'sw','vi','pa','jv','tl','ha','da','in','no','pl','ro','sv','th'];
   var userLang = BrowserLanguage();
   var ostr = [`<h3 style="margin:0px auto;text-align:center;">${i18n.shareLinksHappiness}</h3>
@@ -813,7 +849,7 @@ function ShowShareDialog(id, title){
           <select onchange="this.nextElementSibling.value=this.value;DisplayShareRssLang()">
             <option value=""></option>`);
   for (var lang of languages) {
-    ostr.push(`<option value="${lang}">${lang}</option>`);
+    ostr.push(`<option value="${lang}">${LanguageName(lang)}</option>`);
   }
   ostr.push(`</select>
           <input type="text" name="category" oninput="DisplayShareRssLang()" value="${userLang}" id="txt_share_rss_lang" />
@@ -872,7 +908,8 @@ function StartShareRss(id, title) {
 //打开上传Recipe对话框，选择一个文件后上传
 function OpenUploadRecipeDialog() {
   var ostr = `<h3 style="padding:0px;margin:0px auto 30px auto;text-align:center;">${i18n.uploadCustomRecipe}</h3>
-    <form class="pure-form pure-form-aligned">
+    <form class="pure-form pure-form-aligned" id="upload_recipe_form" ondragover="UploadRecipeDragOver(event)" 
+      ondragleave="UploadRecipeLeave(event)" ondrop="UploadRecipeDrop(event)">
       <fieldset>
         <div class="pure-control-group">
           <label for="recipe_file">${i18n.file}</label>
@@ -942,6 +979,29 @@ function OpenUploadRecipeDialog() {
   }).catch(function(){});
 }
 
+//拖放文件到上传recipe对话框 - 进入事件，添加视觉反馈
+function UploadRecipeDragOver(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  $('#upload_recipe_form').css('border', '2px dashed #4CAF50');
+}
+
+//拖放文件到上传recipe对话框 - 离开事件
+function UploadRecipeLeave(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  $('#upload_recipe_form').css('border', '');
+}
+
+//拖放文件到上传recipe对话框 - 放下事件
+function UploadRecipeDrop(event) {
+  UploadRecipeLeave(event);
+  const files = event.dataTransfer.files;
+  if (files && files.length > 0) {
+    document.getElementById('recipe_file').files = files;
+  }
+}
+
 //删除一个已经上传的Recipe
 function DeleteUploadRecipe(id, title) {
   title = decodeJsSafeStr(title);
@@ -968,7 +1028,7 @@ function DeleteUploadRecipe(id, title) {
   });
 }
 
-//在页面下发插入bookmarklet
+//在页面下方插入bookmarklet
 function insertBookmarkletGmailThis(subscribeUrl, mailPrefix) {
   var parser = $('<a>', {href: subscribeUrl});
   var host = parser.prop('hostname');
@@ -1146,10 +1206,18 @@ var AjaxFileUpload = {
             return xhr;
           },
           success: function (data, textStatus, xhr) {
-            self.onSuccess(xhr.responseText);
+            var resp = xhr.responseText;
+            if (resp === undefined) {
+              resp = typeof data === 'object' ? JSON.stringify(data) : data;
+            }
+            self.onSuccess(resp);
           },
           error: function (xhr, textStatus, errorThrown) {
-            self.onFailure(xhr.status, xhr.responseText);
+            var resp = xhr.responseText;
+            if (resp === undefined) {
+              resp = errorThrown || "Network Error or Request Aborted";
+            }
+            self.onFailure(xhr.status, resp);
           }
         });
       }
@@ -1177,7 +1245,11 @@ var AjaxFileUpload = {
         }
       },
       error: function(xhr, status, error) {
-        alert(status + '\n' + error);
+        var errText = xhr.responseText;
+        if (errText === undefined) {
+          errText = error || "Network Error";
+        }
+        alert(status + '\n' + errText);
       }
     });
   },
@@ -1292,6 +1364,7 @@ function SetCoverToDefaultImg(idx) {
 function startUploadCoversToServer(url) {
   var totalSize = 0;
   var fileDatas = new FormData();
+  fileDatas.append('enable', $('#enableCover').val());
   fileDatas.append('order', $('#coverOrder').val());
   for (var idx = 0; idx < 7; idx++) {
     var coverName = 'cover' + idx;
@@ -1422,7 +1495,7 @@ function TestTranslator(recipeId) {
   var text = $('#translator_test_src_text').val();
   //console.log(text);
   var divDst = $('#translator_test_dst_text');
-  divDst.val(i18n.translating);
+  divDst.val(i18n.processing);
   recipeId = recipeId.replace(':', '__');
   MakeAjaxRequest("/translator/test/" + recipeId, "POST", {recipeId: recipeId, text: text}, function (resp) {
     divDst.val(resp.text);
@@ -1435,6 +1508,7 @@ function TestTranslator(recipeId) {
 //根据当前可选的TTS引擎列表 g_tts_engines 填充下拉框，currEngineName为Recipe的当前配置
 function PopulateTTSFields(currEngineName) {
   var engineSel = $('#tts_engine');
+  engineSel.empty();
   for (var name in g_tts_engines) {
     var selected = (currEngineName == name) ? 'selected="selected"' : '';
     var txt = '<option value="{0}" {1}>{2}</option>'.format(name, selected, g_tts_engines[name].alias);
@@ -1574,6 +1648,47 @@ function TestTTS(recipeId) {
   });
 }
 ///[end] book_audiolator.html
+
+///[start] book_summarizer.html
+//根据当前可选的AI引擎列表 g_ai_engines 填充下拉框，currEngineName 为Recipe的当前配置
+function PopulateSummarizerFields(currEngineName) {
+  var engineSel = $('#summarizer_engine');
+  engineSel.empty();
+  for (var name in g_ai_engines) {
+    var selected = (currEngineName == name) ? 'selected="selected"' : '';
+    var txt = '<option value="{0}" {1}>{0}</option>'.format(name, selected);
+    engineSel.append($(txt));
+  }
+}
+
+//选择一个AI引擎后填充对应引擎的model列表
+//model: 当前recipe的model名字
+function SummarizerEngineFieldChanged(model) {
+  let hasSelected = false;
+  var engineName = $('#summarizer_engine').val();
+  var models = g_ai_engines[engineName].models || [];
+  
+  let modelSel = $('#summarizer_model');
+  modelSel.empty();
+  for (const item of models) {
+    let selected = (item.name == model) ? 'selected="selected"' : '';
+    let txt = '<option value="{0}" {1}>{0}</option>'.format(item.name, selected);
+    modelSel.append($(txt));
+  }
+}
+
+//测试文章摘要设置
+function TestSummarizer(recipeId) {
+  var text = $('#summarizer_test_src_text').val();
+  var divDst = $('#summarizer_test_dst_text');
+  divDst.val(i18n.processing);
+  recipeId = recipeId.replace(':', '__');
+  MakeAjaxRequest("/summarizer/test/" + recipeId, "POST", {recipeId: recipeId, text: text}, function (resp) {
+    divDst.val(resp.summary);
+  });
+}
+///[end] book_summarizer.html
+
 ///[start] settings.html
 //点击文本设置对应周内日checkbox的选中状态
 function ToggleWeekBtn(btnName) {
@@ -1616,6 +1731,14 @@ function SetSmOptiosVisualbility() {
     $('#sm_username').show();
     $('#sm_password').show();
     $('#sm_save_path').hide();
+  } else if (svr == 'webdav') {
+    $('#sm_apikey').hide();
+    $('#sm_secret_key').hide();
+    $('#sm_host').show();
+    $('#sm_port').show();
+    $('#sm_username').show();
+    $('#sm_password').show();
+    $('#sm_save_path').show();
   } else if (svr == 'local') {
     $('#sm_apikey').hide();
     $('#sm_secret_key').hide();
@@ -1647,16 +1770,28 @@ function SendTestEmail() {
 
 //根据词典引擎列表 g_dictEngines 和 当前配置 g_dictParams 填充下拉框
 function PopulateDictFields() {
-  for (var idx = 0; idx < 3; idx++) {
-    var cfg = g_dictParams[idx];
-    var engineSel = $('#dict_engine' + idx);
+  for (let idx = 0; idx < 3; idx++) {
+    const cfg = g_dictParams[idx];
+    const engineSel = $('#dict_engine' + idx);
     engineSel.empty();
-    var engineName = cfg.engine;
-    for (var name in g_dictEngines) {
-      var selected = (engineName == name) ? 'selected="selected"' : '';
-      var txt = `<option value="${name}" ${selected}>${name}</option>`;
-      engineSel.append($(txt));
+    const engineName = cfg.engine;
+    const groupedEngines = {'Online': [], 'Offline': []};
+    for (const name in g_dictEngines) { //分组词典引擎
+      const mode = g_dictEngines[name].mode;
+      groupedEngines[(mode === 'online') ? 'Online' : 'Offline'].push(name);
     }
+
+    //添加选项到engineSel
+    ['Online', 'Offline'].forEach((group) => {
+      if (groupedEngines[group].length) {
+        const grp = $('<optgroup>', { label: group });
+        groupedEngines[group].forEach((name) => {
+          const selected = (engineName === name) ? 'selected' : '';
+          grp.append($(`<option value="${name}" ${selected}>${name}</option>`));
+        });
+        engineSel.append(grp);
+      }
+    });
   }
 }
 
@@ -1668,9 +1803,12 @@ function DictEngineFieldChanged(idx) {
   var engine = engineSel.val();
   dbSel.empty();
   var databases = g_dictEngines[engine].databases;
-  if (!databases) {
+  if (!databases || Object.keys(databases).length === 0) {
+    var txt = `<option value="${name}" ${selected}>${databases[name]}</option>`;
+    dbSel.append($(`<option value="" disabled selected>[${i18n.putFileInDict}]</option>`));
     return;
   }
+
   var currDb = g_dictParams[idx].database;
   for (var name in databases) {
     var selected = (currDb == name) ? 'selected="selected"' : '';
@@ -1680,3 +1818,19 @@ function DictEngineFieldChanged(idx) {
 }
 
 ///[end] adv_dict.html
+
+///[start] adv_proxy.html
+//测试代理服务器文本框有变化后，将网址更新到测试按钮
+function UpdateProxyTestHref(url) {
+  $('#btn_test_proxy').attr('href', '/fwd?url=' + encodeURIComponent(url));
+}
+
+//按下回车键触发 "测试" 链接按钮
+function TriggerBtnTestProxy(event) {
+  if (event.key === "Enter") {
+    console.log('enter');
+    event.preventDefault();
+    window.open($('#btn_test_proxy').attr("href"), "_blank");
+  }
+}
+///[end] adv_proxy.html

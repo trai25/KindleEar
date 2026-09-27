@@ -6,7 +6,7 @@
 #https://cloud.google.com/appengine/docs/standard/python3/reference/services/bundled/google/appengine/api/mail
 #https://cloud.google.com/appengine/docs/standard/python3/services/mail
 import os, datetime, zipfile, base64
-from ..utils import str_to_bool, sanitize_filename
+from ..ke_utils import str_to_bool, sanitize_filename
 from ..base_handler import save_delivery_log
 
 #google.appengine will apply patch for os.env module
@@ -32,15 +32,14 @@ try:
 except ImportError:
     MailjetClient = None
 
-from smtp_mail import smtp_send_mail
-
 #返回当前可用的发送邮件服务列表
+#字典键为程序内容保存的服务ID，字典值为显示在网页上的名称
 def avaliable_sm_services():
     sm = {}
+    sm['smtp'] = 'SMTP'
+    sm['webdav'] = 'WebDAV'
     if gae_mail:
         sm['gae'] = 'GAE'
-    if smtp_send_mail:
-        sm['smtp'] = 'SMTP'
     if SendGridAPIClient:
         sm['sendgrid'] = 'sendgrid'
     if MailjetClient:
@@ -49,7 +48,7 @@ def avaliable_sm_services():
         sm['local'] = 'local (debug)'
     return sm
 
-#发送邮件
+#发送邮件或保存到网盘
 #title: 邮件标题
 #attachment: 附件二进制内容，或元祖 (filename, content)
 #fileWithTime: 发送的附件文件名是否附带当前时间
@@ -59,13 +58,15 @@ def send_to_kindle(user, title, attachment, fileWithTime=True, to=None):
     subject = f"KindleEar {lcTime}"
     to = to or user.cfg('kindle_email')
 
-    if not isinstance(attachment, (tuple, list)):
+    if isinstance(attachment, tuple):
+        attachment = [attachment]
+    elif not isinstance(attachment, list):
         lcTime = "({})".format(lcTime) if fileWithTime else ""
         fileName = f"{title}{lcTime}.{user.book_cfg('type')}"
-        attachment = (fileName, attachment)
-    
-    if not isinstance(attachment, list):
-        attachment = [attachment]
+        attachment = [(fileName, attachment)]
+
+    for idx in range(len(attachment)):
+        attachment[idx] = (sanitize_filename(attachment[idx][0]), attachment[idx][1])
 
     status = 'ok'
     body = "Deliver from KindleEar"
@@ -73,18 +74,24 @@ def send_to_kindle(user, title, attachment, fileWithTime=True, to=None):
         send_mail(user, to, subject, body, attachment)
     except Exception as e:
         status = str(e)[:500]
-        default_log.warning(f'Failed to send mail "{title}": {status}')
+        default_log.warning(f'Failed to send "{title}": {status}')
     
     size = sum([len(a[1]) for a in attachment])
     save_delivery_log(user, title, size, status=status, to=to)
 
 #统一的发送邮件函数
 def send_mail(user, to, subject, body, attachments=None, html=None):
-    if not isinstance(to, list):
+    sender = user.cfg('sender')
+    if not sender:
+        raise ValueError('Email of sender is empty')
+    if not to:
+        raise ValueError('Email of recipient is empty')
+    elif not isinstance(to, list):
         to = to.split(',')
+        
     sm_service = user.get_send_mail_service()
     srv_type = sm_service.get('service', '')
-    data = {'sender': user.cfg('sender'), 'to': to, 'subject': subject, 'body': body}
+    data = {'sender': sender, 'to': to, 'subject': subject, 'body': body}
     if attachments:
         data['attachments'] = attachments
     if html:
@@ -101,11 +108,19 @@ def send_mail(user, to, subject, body, attachments=None, html=None):
         secret_key = sm_service.get('secret_key', '')
         mailjet_send_mail(apikey=apikey, secret_key=secret_key, **data)
     elif srv_type == 'smtp':
+        from smtp_mail import smtp_send_mail
         data['host'] = sm_service.get('host', '')
-        data['port'] = sm_service.get('port', 587)
+        data['port'] = sm_service.get('port', '')
         data['username'] = sm_service.get('username', '')
         data['password'] = sm_service.get('password', '') #获取配置字典时已经解密
         smtp_send_mail(**data)
+    elif srv_type == 'webdav':
+        data['host'] = sm_service.get('host', '')
+        data['port'] = sm_service.get('port', '')
+        data['username'] = sm_service.get('username', '')
+        data['password'] = sm_service.get('password', '') #获取配置字典时已经解密
+        data['path'] = sm_service.get('save_path', 'KindleEar')
+        webdav_save(**data)
     elif srv_type == 'local':
         save_mail_to_local(sm_service.get('save_path', 'tests/debug_mail'), **data)
     else:
@@ -197,11 +212,20 @@ def mailjet_send_mail(apikey, secret_key, sender, to, subject, body, html=None, 
             raise Exception(f'mailjet failed: {status}')
     else:
         raise Exception(f'mailjet failed: {resp.status_code}')
-    
+
+#使用webdav保存文件
+def webdav_save(host, username, password, path, port=None, attachments=None, **kwargs):
+    from webdav_client import SimpleWebdavClient
+    client = SimpleWebdavClient(host, port, username, password)
+    client.ensureRemoteDir(path)
+    for fileName, content in (attachments or []):
+        client.upload(os.path.join(path, fileName), content)
+
+#调试目录，保存邮件内容到本地
 def save_mail_to_local(dest_dir, subject, body, attachments=None, html=None, **kwargs):
     attachments = attachments or []
     mailDir = os.path.join(appDir, dest_dir)
-    if not os.path.exists(mailDir):
+    if not os.path.isdir(mailDir):
         os.makedirs(mailDir)
 
     now = str(datetime.datetime.now().strftime('%H-%M-%S'))

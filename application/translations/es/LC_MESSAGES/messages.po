@@ -1,0 +1,2445 @@
+# Chinese translations for KindleEar.
+# Copyright (C) 2024 ORGANIZATION
+# This file is distributed under the same license as the KindleEar project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: KindleEar v3.0.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-09-03 04:37-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: es\n"
+"Language-Team: KindleEar <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: application/mail_hook.py:107 application/mail_hook.py:110
+#, python-brace-format
+msgid "Forbidden module import in mail hook: {}"
+msgstr "Importación de módulo prohibida en el hook de correo: {}"
+
+#: application/mail_hook.py:113
+#, python-brace-format
+msgid "Forbidden attribute access in mail hook: {}"
+msgstr "Acceso a atributo prohibido en el hook de correo: {}"
+
+#: application/mail_hook.py:116
+#, python-brace-format
+msgid "Forbidden function call in mail hook: {}()"
+msgstr "Llamada a función prohibida en el hook de correo: {}()"
+
+#: application/mail_hook.py:133
+#, python-brace-format
+msgid "The signature of {}() is invalid, it should be: def {}({})"
+msgstr "La firma de {}() no es válida, debería ser: def {}({})"
+
+#: application/mail_hook.py:136
+#, python-brace-format
+msgid "Cannot find the function {} or {} in the hook file."
+msgstr "No se puede encontrar la función {} o {} en el archivo hook."
+
+#: application/templates/admin.html:3 application/templates/base.html:53
+#: application/templates/base.html:192 application/templates/settings.html:263
+msgid "Account"
+msgstr "Cuenta"
+
+#: application/templates/admin.html:19
+msgid "Signup settings"
+msgstr "Configuración de registro"
+
+#: application/templates/admin.html:19
+#: application/templates/adv_calibre_options.html:18
+#: application/templates/adv_proxy.html:18
+msgid "Save"
+msgstr "Guardar"
+
+#: application/templates/admin.html:21 application/templates/user_account.html:31
+msgid "Email service"
+msgstr "Servicio de correo electrónico"
+
+#: application/templates/admin.html:23 application/templates/user_account.html:34
+msgid "Same as admin"
+msgstr "Igual que el administrador"
+
+#: application/templates/admin.html:24 application/templates/user_account.html:35
+msgid "Independent"
+msgstr "Independiente"
+
+#: application/templates/admin.html:28
+msgid "Signup type"
+msgstr "Tipo de registro"
+
+#: application/templates/admin.html:30
+msgid "Public"
+msgstr "Público"
+
+#: application/templates/admin.html:31
+msgid "One time code"
+msgstr "Código de un solo uso"
+
+#: application/templates/admin.html:32
+msgid "Permanent code"
+msgstr "Código permanente"
+
+#: application/templates/admin.html:36
+msgid "Invitation codes"
+msgstr "Códigos de invitación"
+
+#: application/templates/admin.html:37
+msgid "one code per line"
+msgstr "un código por línea"
+
+#: application/templates/admin.html:43
+msgid "Accounts"
+msgstr "Cuentas"
+
+#: application/templates/admin.html:43
+#: application/templates/adv_inboundmail.html:64 application/templates/my.html:34
+#: application/view/admin.py:57 application/view/admin.py:64
+#: application/view/admin.py:91
+msgid "Add"
+msgstr "Agregar"
+
+#: application/templates/admin.html:54 application/templates/adv_archive.html:69
+#: application/templates/home.html:19 application/templates/login.html:24
+#: application/templates/logs.html:70 application/templates/reset_password.html:19
+#: application/templates/reset_password.html:20
+#: application/templates/settings.html:241 application/templates/signup.html:21
+#: application/templates/user_account.html:15
+msgid "Username"
+msgstr "Nombre de usuario"
+
+#: application/templates/admin.html:55
+msgid "AutoSend"
+msgstr "Envío automático"
+
+#: application/templates/admin.html:56
+#: application/templates/change_password.html:27
+#: application/templates/reset_password.html:26
+#: application/templates/signup.html:33 application/templates/user_account.html:27
+msgid "Email"
+msgstr "Email"
+
+#: application/templates/admin.html:57 application/templates/user_account.html:39
+msgid "Expiration"
+msgstr "Expiración"
+
+#: application/templates/admin.html:58
+msgid "Operation"
+msgstr "Operación"
+
+#: application/templates/admin.html:65
+msgid "Yes"
+msgstr "Sí"
+
+#: application/templates/admin.html:65
+msgid "No"
+msgstr "No"
+
+#: application/templates/admin.html:68
+msgid "Never"
+msgstr "Nunca"
+
+#: application/templates/admin.html:70
+#: application/templates/adv_inboundmail.html:26
+#: application/templates/settings.html:58 application/templates/settings.html:181
+#: application/templates/user_account.html:43
+msgid "7 Days"
+msgstr "7 Días"
+
+#: application/templates/admin.html:72 application/templates/user_account.html:44
+msgid "1 Month"
+msgstr "1 Mes"
+
+#: application/templates/admin.html:74 application/templates/user_account.html:45
+msgid "3 Months"
+msgstr "3 Meses"
+
+#: application/templates/admin.html:76 application/templates/user_account.html:46
+msgid "6 Months"
+msgstr "6 Meses"
+
+#: application/templates/admin.html:78 application/templates/user_account.html:47
+msgid "1 Year"
+msgstr "1 Año"
+
+#: application/templates/admin.html:80 application/templates/user_account.html:48
+msgid "2 Years"
+msgstr "2 Años"
+
+#: application/templates/admin.html:85
+#: application/templates/change_password.html:3
+#: application/templates/change_password.html:13 application/view/admin.py:129
+#: application/view/admin.py:183
+msgid "Edit account"
+msgstr "Editar cuenta"
+
+#: application/templates/admin.html:89
+#: application/templates/adv_inboundmail.html:57
+#: application/templates/adv_uploadcss.html:31 application/templates/base.html:25
+#: application/templates/webmail.html:22
+msgid "Delete"
+msgstr "Eliminar"
+
+#: application/templates/adv_archive.html:3
+#: application/templates/adv_archive.html:14
+#: application/templates/adv_base.html:57 application/templates/adv_base.html:61
+msgid "Archive"
+msgstr "Archivar"
+
+#: application/templates/adv_archive.html:15
+msgid "Append hyperlinks for archiving or sharing."
+msgstr "Añadir hipervínculos para archivar o compartir."
+
+#: application/templates/adv_archive.html:40
+msgid "Authorized"
+msgstr "Autorizado"
+
+#: application/templates/adv_archive.html:42
+msgid "Authorize"
+msgstr "Autorizar"
+
+#: application/templates/adv_archive.html:53
+msgid "Email or Username"
+msgstr "Correo electrónico o nombre de usuario"
+
+#: application/templates/adv_archive.html:56
+#: application/templates/adv_archive.html:72 application/templates/base.html:54
+#: application/templates/home.html:20 application/templates/login.html:28
+#: application/templates/settings.html:245 application/templates/signup.html:25
+#: application/templates/user_account.html:19
+msgid "Password"
+msgstr "Contraseña"
+
+#: application/templates/adv_archive.html:59
+#: application/templates/adv_archive.html:75 application/templates/base.html:64
+msgid "Verify"
+msgstr "Verificar"
+
+#: application/templates/adv_archive.html:78
+msgid "client_id"
+msgstr "client_id"
+
+#: application/templates/adv_archive.html:81
+msgid "client_secret"
+msgstr "client_secret"
+
+#: application/templates/adv_archive.html:84
+#: application/templates/settings.html:233
+msgid "Host"
+msgstr "Host"
+
+#: application/templates/adv_archive.html:119
+#: application/templates/adv_dict.html:79
+#: application/templates/adv_inboundmail.html:34
+#: application/templates/book_audiolator.html:113
+#: application/templates/book_summarizer.html:88
+#: application/templates/book_translator.html:80
+#: application/templates/settings.html:269
+msgid "Save settings"
+msgstr "Guardar configuración"
+
+#: application/templates/adv_base.html:39 application/templates/adv_base.html:43
+#: application/templates/adv_delivernow.html:8
+msgid "Deliver Now"
+msgstr "Entregar ahora"
+
+#: application/templates/adv_base.html:48 application/templates/adv_base.html:52
+#: application/templates/adv_inboundmail.html:3
+#: application/templates/adv_inboundmail.html:9
+#: application/templates/adv_inboundmail.html:14
+msgid "Inbound Mail"
+msgstr "Correo entrante"
+
+#: application/templates/adv_base.html:66 application/templates/adv_base.html:70
+#: application/templates/adv_dict.html:3 application/templates/adv_dict.html:13
+#: application/templates/reader.html:134
+msgid "Dictionary"
+msgstr "Diccionario"
+
+#: application/templates/adv_base.html:75 application/templates/adv_base.html:83
+#: application/templates/adv_proxy.html:3 application/templates/adv_proxy.html:12
+msgid "Proxy"
+msgstr "Proxy"
+
+#: application/templates/adv_base.html:92 application/templates/adv_base.html:96
+#: application/templates/adv_import.html:8
+msgid "Import Feeds"
+msgstr "Importar fuentes"
+
+#: application/templates/adv_base.html:101 application/templates/adv_base.html:105
+msgid "Cover Image"
+msgstr "Imagen de portada"
+
+#: application/templates/adv_base.html:110 application/templates/adv_base.html:114
+#: application/templates/adv_uploadcss.html:3
+msgid "Stylesheet"
+msgstr "Hoja de estilo"
+
+#: application/templates/adv_base.html:119 application/templates/adv_base.html:123
+#: application/templates/adv_calibre_options.html:3
+#: application/templates/adv_calibre_options.html:12
+msgid "Calibre Options"
+msgstr "Opciones de Calibre"
+
+#: application/templates/adv_calibre_options.html:13
+msgid "Set the parameters for Calibre, in JSON dictionary format."
+msgstr "Establezca los parámetros para Calibre, en formato de diccionario JSON."
+
+#: application/templates/adv_delivernow.html:3
+msgid "Deliver now"
+msgstr "Entregar ahora"
+
+#: application/templates/adv_delivernow.html:9
+msgid "Deliver selected recipes now."
+msgstr "Entregar las recetas seleccionadas ahora."
+
+#: application/templates/adv_delivernow.html:12
+msgid "There are no recipes subscribed"
+msgstr "No hay recetas suscritas"
+
+#: application/templates/adv_delivernow.html:17
+#: application/templates/base.html:101
+msgid "Sep"
+msgstr "Sep"
+
+#: application/templates/adv_delivernow.html:22
+msgid "Select all"
+msgstr "Seleccionar todo"
+
+#: application/templates/adv_delivernow.html:23
+msgid "Select none"
+msgstr "No seleccionar ninguno"
+
+#: application/templates/adv_delivernow.html:28
+msgid "Deliver"
+msgstr "Entregar"
+
+#: application/templates/adv_dict.html:15
+msgid "Set up dictionaries for online reading."
+msgstr "Configurar diccionarios para lectura en línea."
+
+#: application/templates/adv_dict.html:18 application/templates/adv_dict.html:40
+#: application/templates/adv_dict.html:62
+msgid "Book language"
+msgstr "Idioma del libro"
+
+#: application/templates/adv_dict.html:27 application/templates/adv_dict.html:49
+#: application/templates/adv_dict.html:66
+#: application/templates/book_summarizer.html:23
+#: application/templates/book_translator.html:26
+#: application/templates/word_lookup.html:59
+msgid "Engine"
+msgstr "Motor"
+
+#: application/templates/adv_dict.html:33 application/templates/adv_dict.html:55
+#: application/templates/adv_dict.html:72
+#: application/templates/word_lookup.html:65
+msgid "Database"
+msgstr "Base de datos"
+
+#: application/templates/adv_dict.html:63
+msgid "Other languages"
+msgstr "Otros idiomas"
+
+#: application/templates/adv_dict.html:81 application/templates/word_lookup.html:3
+#: application/templates/word_lookup.html:79
+msgid "Word lookup"
+msgstr "Búsqueda de palabras"
+
+#: application/templates/adv_dict.html:86 application/view/reader.py:29
+#: application/view/reader.py:86
+msgid "Online reading feature has not been activated yet."
+msgstr "La función de lectura en línea aún no ha sido activada."
+
+#: application/templates/adv_import.html:3
+#: application/templates/adv_import.html:19
+msgid "Import"
+msgstr "Importar"
+
+#: application/templates/adv_import.html:9
+msgid "Import custom rss from an OPML file."
+msgstr "Importar RSS personalizado desde un archivo OPML."
+
+#: application/templates/adv_import.html:15
+msgid "Import as fulltext rss by default"
+msgstr "Importar como RSS de texto completo por defecto"
+
+#: application/templates/adv_import.html:20
+msgid "Download"
+msgstr "Descargar"
+
+#: application/templates/adv_inboundmail.html:11
+msgid ""
+"To enable the inbound email feature, you also need to configure the "
+"whitelist."
+msgstr ""
+"Para habilitar la función de correo entrante, también debe configurar la "
+"lista blanca."
+
+#: application/templates/adv_inboundmail.html:16
+#: application/templates/adv_uploadcover.html:15
+#: application/templates/book_summarizer.html:19
+#: application/templates/book_translator.html:22
+#: application/templates/settings.html:143
+msgid "Disable"
+msgstr "Deshabilitar"
+
+#: application/templates/adv_inboundmail.html:17
+msgid "Forward Only"
+msgstr "Solo reenviar"
+
+#: application/templates/adv_inboundmail.html:18
+msgid "Save Only"
+msgstr "Solo guardar"
+
+#: application/templates/adv_inboundmail.html:19
+msgid "Save and Forward"
+msgstr "Guardar y reenviar"
+
+#: application/templates/adv_inboundmail.html:23
+msgid "Email Retention"
+msgstr "Retención de correo electrónico"
+
+#: application/templates/adv_inboundmail.html:25
+#: application/templates/settings.html:52 application/templates/settings.html:175
+msgid "1 Day"
+msgstr "1 Día"
+
+#: application/templates/adv_inboundmail.html:27
+#: application/templates/settings.html:59
+msgid "30 Days"
+msgstr "30 Días"
+
+#: application/templates/adv_inboundmail.html:28
+#: application/templates/settings.html:51 application/templates/settings.html:174
+msgid "No limit"
+msgstr "Sin límite"
+
+#: application/templates/adv_inboundmail.html:36
+msgid "Open webmail"
+msgstr "Abrir webmail"
+
+#: application/templates/adv_inboundmail.html:44
+msgid "White List"
+msgstr "Lista blanca"
+
+#: application/templates/adv_inboundmail.html:46
+#, python-format
+msgid ""
+"Emails sent to %(name)sxxx@%(mailHost)s will be forwarded to your kindle "
+"email."
+msgstr ""
+"Los correos electrónicos enviados a %(name)sxxx@%(mailHost)s serán "
+"reenviados a su correo electrónico de Kindle."
+
+#: application/templates/adv_inboundmail.html:47
+msgid "Example"
+msgstr "Ejemplo"
+
+#: application/templates/adv_inboundmail.html:56
+#: application/templates/adv_inboundmail.html:78 application/view/adv.py:148
+msgid "Mail preprocess hook"
+msgstr "Hook de preprocesamiento de correo"
+
+#: application/templates/adv_inboundmail.html:56
+msgid "Hooked"
+msgstr "Hookeado"
+
+#: application/templates/adv_inboundmail.html:56
+msgid "Hook"
+msgstr "Hook"
+
+#: application/templates/adv_inboundmail.html:62
+msgid "Please input mail address"
+msgstr "Por favor, ingrese la dirección de correo"
+
+#: application/templates/adv_inboundmail.html:79
+#: application/templates/adv_uploadcss.html:30
+msgid "Upload"
+msgstr "Subir"
+
+#: application/templates/adv_inboundmail.html:80
+msgid "View"
+msgstr "Ver"
+
+#: application/templates/adv_inboundmail.html:81
+msgid "Please select a file."
+msgstr "Por favor selecciona un archivo."
+
+#: application/templates/adv_inboundmail.html:82
+#, python-brace-format
+msgid ""
+"A hook file ({0}) already exists for this address, you can replace or delete"
+" it."
+msgstr ""
+"Ya existe un archivo hook ({0}) para esta dirección, puedes reemplazarlo o "
+"eliminarlo."
+
+#: application/templates/adv_inboundmail.html:83
+msgid ""
+"The hook is a normal python file used to preprocess the mail from this "
+"sender before delivery. Define one or both of the following functions in the"
+" file:"
+msgstr ""
+"El hook es un archivo python normal que se usa para preprocesar el correo de"
+" este remitente antes de la entrega. Define una o ambas de las siguientes "
+"funciones en el archivo:"
+
+#: application/templates/adv_inboundmail.html:84
+msgid "The hook file have been saved successfully."
+msgstr "El archivo hook ha sido guardado exitosamente."
+
+#: application/templates/adv_inboundmail.html:85
+msgid "The hook file have been deleted."
+msgstr "El archivo hook ha sido eliminado."
+
+#: application/templates/adv_proxy.html:13
+msgid "Supports"
+msgstr "Soporta"
+
+#: application/templates/adv_proxy.html:24 application/templates/adv_proxy.html:29
+#: application/templates/book_audiolator.html:132
+#: application/templates/book_summarizer.html:105
+#: application/templates/book_translator.html:97
+msgid "Test"
+msgstr "Probar"
+
+#: application/templates/adv_uploadcover.html:3
+msgid "Cover image"
+msgstr "Imagen de portada"
+
+#: application/templates/adv_uploadcover.html:9
+msgid "Upload cover image"
+msgstr "Subir imagen de portada"
+
+#: application/templates/adv_uploadcover.html:10
+msgid "Upload cover images from local with an aspect ratio of approximately 0.625."
+msgstr ""
+"Subir imágenes de portada desde local con una proporción de aspecto de "
+"aproximadamente 0.625."
+
+#: application/templates/adv_uploadcover.html:13
+msgid "Include cover"
+msgstr "Incluir portada"
+
+#: application/templates/adv_uploadcover.html:16
+#: application/templates/book_summarizer.html:18
+#: application/templates/book_translator.html:21
+msgid "Enable"
+msgstr "Habilitar"
+
+#: application/templates/adv_uploadcover.html:20
+msgid "Rule for cover"
+msgstr "Regla para la portada"
+
+#: application/templates/adv_uploadcover.html:22
+msgid "Random"
+msgstr "Aleatorio"
+
+#: application/templates/adv_uploadcover.html:23
+#: application/templates/base.html:127
+msgid "Weekday"
+msgstr "Día de la semana"
+
+#: application/templates/adv_uploadcover.html:49
+msgid "Upload/Update"
+msgstr "Subir/Actualizar"
+
+#: application/templates/adv_uploadcss.html:22
+msgid "Upload stylesheet"
+msgstr "Subir hoja de estilo"
+
+#: application/templates/adv_uploadcss.html:23
+msgid "Upload a stylesheet from local (accept utf-8 only)."
+msgstr "Subir una hoja de estilo desde local (solo acepta utf-8)."
+
+#: application/templates/autoback.html:3
+msgid "Auto back"
+msgstr "Regreso automático"
+
+#: application/templates/autoback.html:28
+msgid "Auto back to previous page after 5 seconds"
+msgstr "Regresar automáticamente a la página anterior después de 5 segundos"
+
+#: application/templates/autoback.html:29 application/templates/tipsback.html:15
+msgid "Click to back"
+msgstr "Haga clic para regresar"
+
+#: application/templates/base.html:24 application/templates/reader.html:189
+msgid "Confirm Deletion"
+msgstr "Confirmar eliminación"
+
+#: application/templates/base.html:26
+msgid "Delete (Ctrl for no confirm)"
+msgstr "Eliminar (Ctrl para no confirmar)"
+
+#: application/templates/base.html:27
+msgid "View Source Code"
+msgstr "Ver código fuente"
+
+#: application/templates/base.html:28
+msgid "Subscribe (Deliver Separately)"
+msgstr "Suscribirse (Entregar por separado)"
+
+#: application/templates/base.html:29
+msgid "Subscribe"
+msgstr "Suscribirse"
+
+#: application/templates/base.html:30
+msgid "Cannot add this custom rss, Error:"
+msgstr "No se puede agregar este RSS personalizado, Error:"
+
+#: application/templates/base.html:31
+msgid "Cannot delete this feed, Error:"
+msgstr "No se puede eliminar esta fuente, Error:"
+
+#: application/templates/base.html:32
+msgid "Fulltext"
+msgstr "Texto completo"
+
+#: application/templates/base.html:33 application/templates/base.html:43
+msgid "Share"
+msgstr "Compartir"
+
+#: application/templates/base.html:34 application/templates/reader.html:190
+msgid "Are you sure to delete?"
+msgstr "¿Está seguro de eliminar?"
+
+#: application/templates/base.html:35
+msgid "Report to the server that this feed is invalid."
+msgstr "Informar al servidor que esta fuente es inválida."
+
+#: application/templates/base.html:36
+msgid "Are you sure to REMOVE ALL CUSTOM RSS?"
+msgstr "¿Está seguro de ELIMINAR TODOS LOS RSS PERSONALIZADOS?"
+
+#: application/templates/base.html:37
+msgid "Share links, share happiness"
+msgstr "Compartir enlaces, compartir felicidad"
+
+#: application/templates/base.html:38
+msgid "Category"
+msgstr "Categoría"
+
+#: application/templates/base.html:39
+#: application/templates/book_audiolator.html:58
+#: application/templates/book_summarizer.html:43
+#: application/templates/settings.html:159
+msgid "Language"
+msgstr "Idioma"
+
+#: application/templates/base.html:40
+msgid "Please write a category in text field if the one you wish is not in the list."
+msgstr ""
+"Por favor, escriba una categoría en el campo de texto si la que desea no "
+"está en la lista."
+
+#: application/templates/base.html:41
+msgid "Ok"
+msgstr "Aceptar"
+
+#: application/templates/base.html:42
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: application/templates/base.html:44
+msgid "Language code invalid"
+msgstr "Código de idioma inválido"
+
+#: application/templates/base.html:45
+msgid "Thank you for sharing."
+msgstr "Gracias por compartir."
+
+#: application/templates/base.html:46 application/templates/reader.html:159
+msgid "Close"
+msgstr "Cerrar"
+
+#: application/templates/base.html:47
+msgid "Unsubscribe"
+msgstr "Darse de baja"
+
+#: application/templates/base.html:48
+msgid "Cannot subscribe this recipe, Error:"
+msgstr "No se puede suscribir esta receta, Error:"
+
+#: application/templates/base.html:49
+#, python-brace-format
+msgid "Are you sure to Unsubscribe ({0})?"
+msgstr "¿Está seguro de darse de baja ({0})?"
+
+#: application/templates/base.html:50
+msgid "Cannot unsubscribe this recipe, Error:"
+msgstr "No se puede dar de baja esta receta, Error:"
+
+#: application/templates/base.html:51
+msgid "The recipe is already subscribed."
+msgstr "La receta ya está suscrita."
+
+#: application/templates/base.html:52
+msgid "Website login lnformation"
+msgstr "Información de inicio de sesión del sitio web"
+
+#: application/templates/base.html:55
+msgid "Submit"
+msgstr "Enviar"
+
+#: application/templates/base.html:56
+msgid ""
+"If any field is left blank, the server will clear the saved login "
+"information."
+msgstr ""
+"Si algún campo queda en blanco, el servidor borrará la información de inicio"
+" de sesión guardada."
+
+#: application/templates/base.html:57
+msgid "Cannot set the website login information, Error:"
+msgstr ""
+"No se puede establecer la información de inicio de sesión del sitio web, "
+"Error:"
+
+#: application/templates/base.html:58 application/templates/my.html:58
+msgid "Upload custom recipe"
+msgstr "Subir receta personalizada"
+
+#: application/templates/base.html:59
+msgid "Congratulations"
+msgstr "Felicidades"
+
+#: application/templates/base.html:60
+msgid "Thanks"
+msgstr "Gracias"
+
+#: application/templates/base.html:61
+msgid ""
+"Your recipe has been uploaded, and it can be found in the Library section. "
+"If you dont see it, please make sure to switch to the correct language."
+msgstr ""
+"Tu receta ha sido subida y se puede encontrar en la sección de Biblioteca. "
+"Si no la ves, asegúrate de cambiar al idioma correcto."
+
+#: application/templates/base.html:62
+msgid "Your recipe have been deleted."
+msgstr "Tu receta ha sido eliminada."
+
+#: application/templates/base.html:63
+msgid "Kindleify Selection"
+msgstr "Selección Kindleify"
+
+#: application/templates/base.html:65
+msgid "Verified"
+msgstr "Verificado"
+
+#: application/templates/base.html:66 application/view/login.py:95
+#: application/view/share.py:157
+msgid "The username does not exist or password is wrong."
+msgstr "El nombre de usuario no existe o la contraseña es incorrecta."
+
+#: application/templates/base.html:67
+msgid "The file you chosen is not an acceptable type."
+msgstr "El archivo que has elegido no es de un tipo aceptable."
+
+#: application/templates/base.html:68
+msgid "The file have been uploaded successfully."
+msgstr "El archivo ha sido subido exitosamente."
+
+#: application/templates/base.html:69 application/templates/library.html:67
+msgid "This feed has been successfully subscribed."
+msgstr "Este feed ha sido suscrito exitosamente."
+
+#: application/templates/base.html:70
+msgid "Thank you for your feedback, this feed will be reviewed soon."
+msgstr "Gracias por tus comentarios, este feed será revisado pronto."
+
+#: application/templates/base.html:71
+#, python-brace-format
+msgid "Are you confirming to share the recipe ({0})?"
+msgstr "¿Confirmas compartir la receta ({0})?"
+
+#: application/templates/base.html:72
+msgid "[All]"
+msgstr "[Todos]"
+
+#: application/templates/base.html:73
+msgid "[By Time]"
+msgstr "[Por Hora]"
+
+#: application/templates/base.html:74
+msgid "[Random]"
+msgstr "[Aleatorio]"
+
+#: application/templates/base.html:75
+msgid "[Uncategoried]"
+msgstr "[Sin Categoría]"
+
+#: application/templates/base.html:76
+msgid "There are no links found."
+msgstr "No se encontraron enlaces."
+
+#: application/templates/base.html:77
+msgid "Invalid report"
+msgstr "Informe inválido"
+
+#: application/templates/base.html:78
+msgid "Are you confirming that this link is invalid or off the cloud?"
+msgstr "¿Confirmas que este enlace es inválido o está fuera de la nube?"
+
+#: application/templates/base.html:79
+msgid "Customize delivery time"
+msgstr "Personalizar hora de entrega"
+
+#: application/templates/base.html:80 application/templates/settings.html:72
+msgid "Delivery days"
+msgstr "Días de entrega"
+
+#: application/templates/base.html:81 application/templates/settings.html:74
+msgid "Mon"
+msgstr "Lun"
+
+#: application/templates/base.html:82 application/templates/settings.html:76
+msgid "Tue"
+msgstr "Mar"
+
+#: application/templates/base.html:83 application/templates/settings.html:78
+msgid "Wed"
+msgstr "Mié"
+
+#: application/templates/base.html:84 application/templates/settings.html:80
+msgid "Thu"
+msgstr "Jue"
+
+#: application/templates/base.html:85 application/templates/settings.html:82
+msgid "Fri"
+msgstr "Vie"
+
+#: application/templates/base.html:86 application/templates/settings.html:84
+msgid "Sat"
+msgstr "Sáb"
+
+#: application/templates/base.html:87 application/templates/settings.html:86
+msgid "Sun"
+msgstr "Dom"
+
+#: application/templates/base.html:88
+msgid "Delivery times"
+msgstr "Horarios de entrega"
+
+#: application/templates/base.html:89
+msgid "The customized delivery time for the recipe has been successfully saved."
+msgstr "La hora de entrega personalizada para la receta ha sido guardada con éxito."
+
+#: application/templates/base.html:90
+msgid "The account have been deleted."
+msgstr "La cuenta ha sido eliminada."
+
+#: application/templates/base.html:91 application/view/share.py:147
+msgid "The username or password is empty."
+msgstr "El nombre de usuario o la contraseña están vacíos."
+
+#: application/templates/base.html:92 application/view/admin.py:81
+#: application/view/admin.py:165 application/view/admin.py:191
+#: application/view/login.py:236 application/view/login.py:289
+msgid "The two new passwords are dismatch."
+msgstr "Las dos nuevas contraseñas no coinciden."
+
+#: application/templates/base.html:93
+msgid "Password changed successfully."
+msgstr "Contraseña cambiada con éxito."
+
+#: application/templates/base.html:94
+msgid "Account added successfully."
+msgstr "Cuenta añadida con éxito."
+
+#: application/templates/base.html:95 application/view/login.py:144
+msgid "login required"
+msgstr "Se requiere iniciar sesión"
+
+#: application/templates/base.html:96
+msgid "Upload cover files successfully."
+msgstr "Archivos de portada subidos con éxito."
+
+#: application/templates/base.html:97
+msgid ""
+"Total size of the files you selected exceeds 16MB. Please reduce the image "
+"resolution or upload in batches."
+msgstr ""
+"El tamaño total de los archivos seleccionados excede los 16 MB. Por favor, "
+"reduce la resolución de la imagen o sube en lotes."
+
+#: application/templates/base.html:98 application/templates/book_translator.html:3
+#: application/templates/book_translator.html:17
+msgid "Bilingual Translator"
+msgstr "Traductor Bilingüe"
+
+#: application/templates/base.html:99 application/templates/book_summarizer.html:3
+#: application/templates/book_summarizer.html:14
+msgid "AI Summarizer"
+msgstr "Resumidor AI"
+
+#: application/templates/base.html:100
+msgid "Upl"
+msgstr "Upl"
+
+#: application/templates/base.html:102
+msgid "Log"
+msgstr "Log"
+
+#: application/templates/base.html:103
+msgid "Emb"
+msgstr "Emb"
+
+#: application/templates/base.html:104
+msgid "Tr"
+msgstr "Tr"
+
+#: application/templates/base.html:105
+msgid "Tts"
+msgstr "Tts"
+
+#: application/templates/base.html:106
+msgid "Ai"
+msgstr "Ai"
+
+#: application/templates/base.html:107
+msgid ""
+"The test email has been successfully sent to the following addresses. Please"
+" check your inbox or spam folder to confirm its delivery. Depending on your "
+"email server, there may be a slight delay."
+msgstr ""
+"El correo electrónico de prueba ha sido enviado exitosamente a las "
+"siguientes direcciones. Por favor, revisa tu bandeja de entrada o carpeta de"
+" spam para confirmar su entrega. Dependiendo de tu servidor de correo, puede"
+" haber un pequeño retraso."
+
+#: application/templates/base.html:108
+msgid "Processing..."
+msgstr "Procesando..."
+
+#: application/templates/base.html:109
+msgid "The configuration validation is correct."
+msgstr "La validación de la configuración es correcta."
+
+#: application/templates/base.html:110 application/templates/logs.html:23
+#: application/templates/logs.html:72 application/templates/my.html:17
+#: application/templates/settings.html:117 application/templates/settings.html:118
+#: application/templates/settings.html:155
+msgid "Title"
+msgstr "Título"
+
+#: application/templates/base.html:111
+#: application/templates/book_audiolator.html:3
+#: application/templates/book_audiolator.html:20
+msgid "Text to Speech"
+msgstr "Texto a Voz"
+
+#: application/templates/base.html:112
+msgid "Action"
+msgstr "Acción"
+
+#: application/templates/base.html:113
+msgid "File"
+msgstr "Archivo"
+
+#: application/templates/base.html:114
+msgid "Upload Only"
+msgstr "Solo Subir"
+
+#: application/templates/base.html:115
+msgid "Send"
+msgstr "Enviar"
+
+#: application/templates/base.html:116 application/templates/logs.html:54
+msgid "There is nothing here."
+msgstr "No hay nada aquí."
+
+#: application/templates/base.html:117
+msgid "Please select a single item."
+msgstr "Por favor selecciona un solo artículo."
+
+#: application/templates/base.html:118 application/templates/reader.html:191
+msgid "Please select at least one item."
+msgstr "Por favor selecciona al menos un artículo."
+
+#: application/templates/base.html:119 application/view/admin.py:77
+#: application/view/admin.py:152 application/view/admin.py:189
+#: application/view/adv.py:527 application/view/extension.py:34
+#: application/view/extension.py:63 application/view/inbound_email.py:481
+#: application/view/inbound_email.py:489 application/view/inbound_email.py:504
+#: application/view/inbound_email.py:525 application/view/login.py:232
+#: application/view/login.py:261 application/view/reader.py:109
+#: application/view/reader.py:126 application/view/share.py:37
+msgid "Some parameters are missing or wrong."
+msgstr "Faltan o son incorrectos algunos parámetros."
+
+#: application/templates/base.html:120
+msgid "The email has been sent."
+msgstr "El correo electrónico ha sido enviado."
+
+#: application/templates/base.html:121 application/templates/webmail.html:29
+msgid "From"
+msgstr "De"
+
+#: application/templates/base.html:122 application/templates/logs.html:25
+#: application/templates/logs.html:74 application/templates/webmail.html:30
+msgid "To"
+msgstr "A"
+
+#: application/templates/base.html:123 application/templates/webmail.html:31
+msgid "Subject"
+msgstr "Asunto"
+
+#: application/templates/base.html:124 application/templates/logs.html:22
+#: application/templates/logs.html:71 application/templates/settings.html:117
+#: application/templates/settings.html:118 application/templates/webmail.html:32
+msgid "Time"
+msgstr "Hora"
+
+#: application/templates/base.html:125 application/templates/logs.html:24
+#: application/templates/logs.html:73 application/templates/webmail.html:33
+msgid "Size"
+msgstr "Tamaño"
+
+#: application/templates/base.html:126
+msgid "Date type"
+msgstr "Tipo de fecha"
+
+#: application/templates/base.html:128
+msgid "Date"
+msgstr "Fecha"
+
+#: application/templates/base.html:129
+msgid "This setting is prioritized."
+msgstr "Esta configuración tiene prioridad."
+
+#: application/templates/base.html:130
+msgid "Combine multiple values with commas."
+msgstr "Combina múltiples valores con comas."
+
+#: application/templates/base.html:131
+msgid "Put dictionary in dict folder"
+msgstr "Pon el diccionario en la carpeta dict"
+
+#: application/templates/base.html:156 application/templates/home.html:16
+msgid "Logout"
+msgstr "Salir"
+
+#: application/templates/base.html:158 application/templates/home.html:21
+#: application/templates/login.html:3 application/templates/login.html:22
+#: application/templates/login.html:33
+msgid "Login"
+msgstr "Entrar"
+
+#: application/templates/base.html:160 application/templates/signup.html:3
+#: application/templates/signup.html:19 application/templates/signup.html:43
+msgid "Signup"
+msgstr "Registrarse"
+
+#: application/templates/base.html:189 application/templates/home.html:15
+#: application/templates/my.html:3
+msgid "Feeds"
+msgstr "Feeds"
+
+#: application/templates/base.html:190 application/templates/settings.html:3
+msgid "Settings"
+msgstr "Ajustes"
+
+#: application/templates/base.html:191 application/templates/logs.html:3
+msgid "Logs"
+msgstr "Logs"
+
+#: application/templates/base.html:193
+msgid "Advanced"
+msgstr "Avanzado"
+
+#: application/templates/base.html:194 application/templates/library.html:3
+msgid "Shared"
+msgstr "Compartido"
+
+#: application/templates/base.html:195 application/templates/reader.html:6
+msgid "Reader"
+msgstr "Lector"
+
+#: application/templates/book_audiolator.html:22
+#: application/templates/book_summarizer.html:16
+#: application/templates/book_translator.html:19
+msgid "State"
+msgstr "Estado"
+
+#: application/templates/book_audiolator.html:24
+msgid "Send Ebook and Audio"
+msgstr "Enviar Ebook y Audio"
+
+#: application/templates/book_audiolator.html:25
+msgid "Send Audio only"
+msgstr "Enviar solo audio"
+
+#: application/templates/book_audiolator.html:26
+msgid "Disable TTS"
+msgstr "Deshabilitar TTS"
+
+#: application/templates/book_audiolator.html:30
+msgid "Send Audio To"
+msgstr "Enviar audio a"
+
+#: application/templates/book_audiolator.html:31
+msgid "Empty to use Kindle_email"
+msgstr "Dejar vacío para usar Kindle_email"
+
+#: application/templates/book_audiolator.html:35
+msgid "TTS Engine"
+msgstr "Motor TTS"
+
+#: application/templates/book_audiolator.html:41
+#: application/templates/book_summarizer.html:35
+#: application/templates/book_translator.html:32
+msgid "Api Host"
+msgstr "Host de API"
+
+#: application/templates/book_audiolator.html:42
+#: application/templates/book_summarizer.html:36
+#: application/templates/book_summarizer.html:75
+msgid "Leave empty to use default"
+msgstr "Dejar vacío para usar el predeterminado"
+
+#: application/templates/book_audiolator.html:46
+msgid "Region"
+msgstr "Región"
+
+#: application/templates/book_audiolator.html:53
+#: application/templates/book_summarizer.html:39
+#: application/templates/book_translator.html:36
+msgid "Api Key"
+msgstr "Api Key"
+
+#: application/templates/book_audiolator.html:66
+msgid "Voice name"
+msgstr "Nombre de la voz"
+
+#: application/templates/book_audiolator.html:73
+msgid "Voice speed"
+msgstr "Velocidad de la voz"
+
+#: application/templates/book_audiolator.html:75
+msgid "Extra slow"
+msgstr "Extra lento"
+
+#: application/templates/book_audiolator.html:76
+msgid "Slow"
+msgstr "Lento"
+
+#: application/templates/book_audiolator.html:77
+#: application/templates/book_audiolator.html:87
+#: application/templates/book_audiolator.html:97
+msgid "Medium"
+msgstr "Medio"
+
+#: application/templates/book_audiolator.html:78
+msgid "Fast"
+msgstr "Rápido"
+
+#: application/templates/book_audiolator.html:79
+msgid "Extra fast"
+msgstr "Extra rápido"
+
+#: application/templates/book_audiolator.html:83
+msgid "Voice pitch"
+msgstr "Tono de la voz"
+
+#: application/templates/book_audiolator.html:85
+msgid "Extra low"
+msgstr "Extra bajo"
+
+#: application/templates/book_audiolator.html:86
+msgid "Low"
+msgstr "Bajo"
+
+#: application/templates/book_audiolator.html:88
+msgid "High"
+msgstr "Alto"
+
+#: application/templates/book_audiolator.html:89
+msgid "Extra high"
+msgstr "Extra alto"
+
+#: application/templates/book_audiolator.html:93
+msgid "Voice volume"
+msgstr "Volumen de la voz"
+
+#: application/templates/book_audiolator.html:95
+msgid "Extra soft"
+msgstr "Extra suave"
+
+#: application/templates/book_audiolator.html:96
+msgid "Soft"
+msgstr "Suave"
+
+#: application/templates/book_audiolator.html:98
+msgid "Loud"
+msgstr "Fuerte"
+
+#: application/templates/book_audiolator.html:99
+msgid "Extra loud"
+msgstr "Extra fuerte"
+
+#: application/templates/book_audiolator.html:105
+#: application/templates/book_summarizer.html:80
+#: application/templates/book_translator.html:72
+msgid "Apply to all subscribed recipes"
+msgstr "Aplicar a todas las recetas suscritas"
+
+#: application/templates/book_audiolator.html:110
+#: application/templates/book_summarizer.html:85
+#: application/templates/book_translator.html:77
+msgid ""
+"Note: Enabling this feature will significantly increase consumed CPU "
+"instance hours."
+msgstr ""
+"Nota: Activar esta función aumentará significativamente las horas de "
+"instancia de CPU consumidas."
+
+#: application/templates/book_audiolator.html:119
+#: application/templates/book_summarizer.html:94
+#: application/templates/book_translator.html:86
+msgid "Test (Please save settings firstly)"
+msgstr "Probar (Por favor, guarda los ajustes primero)"
+
+#: application/templates/book_audiolator.html:121
+#: application/templates/book_summarizer.html:96
+#: application/templates/book_translator.html:88
+msgid "Text"
+msgstr "Texto"
+
+#: application/templates/book_audiolator.html:127
+msgid "Your browser does not support the audio element."
+msgstr "Tu navegador no soporta el elemento de audio."
+
+#: application/templates/book_summarizer.html:29
+msgid "Model"
+msgstr "Model"
+
+#: application/templates/book_summarizer.html:45
+msgid "Auto"
+msgstr "Automático"
+
+#: application/templates/book_summarizer.html:56
+msgid "Summary words"
+msgstr "Palabras del resumen"
+
+#: application/templates/book_summarizer.html:70
+msgid "Summary style"
+msgstr "Estilo de resumen"
+
+#: application/templates/book_summarizer.html:74
+msgid "Placeholders available:"
+msgstr "Marcadores de posición disponibles:"
+
+#: application/templates/book_summarizer.html:74
+msgid "Custom prompt"
+msgstr "Mensaje personalizado"
+
+#: application/templates/book_summarizer.html:100
+msgid "Summary"
+msgstr "Resumen"
+
+#: application/templates/book_translator.html:37
+msgid "One key per line"
+msgstr "Una tecla por línea"
+
+#: application/templates/book_translator.html:40
+#: application/templates/word_lookup.html:51
+msgid "Source language"
+msgstr "Idioma de origen"
+
+#: application/templates/book_translator.html:46
+msgid "Target language"
+msgstr "Idioma de destino"
+
+#: application/templates/book_translator.html:52
+msgid "Translation Position"
+msgstr "Posición de traducción"
+
+#: application/templates/book_translator.html:54
+msgid "Below original"
+msgstr "Debajo del original"
+
+#: application/templates/book_translator.html:55
+msgid "Above original"
+msgstr "Arriba del original"
+
+#: application/templates/book_translator.html:56
+msgid "Left to original"
+msgstr "Izquierda del original"
+
+#: application/templates/book_translator.html:57
+msgid "Right to original"
+msgstr "Derecha del original"
+
+#: application/templates/book_translator.html:58
+msgid "Translated text only"
+msgstr "Solo texto traducido"
+
+#: application/templates/book_translator.html:62
+msgid "Original text style"
+msgstr "Estilo de texto original"
+
+#: application/templates/book_translator.html:66
+msgid "Translated text style"
+msgstr "Estilo de texto traducido"
+
+#: application/templates/book_translator.html:92
+msgid "Translation"
+msgstr "Traducción"
+
+#: application/templates/change_password.html:15
+msgid "Old password"
+msgstr "Contraseña antigua"
+
+#: application/templates/change_password.html:19
+#: application/templates/reset_password.html:31
+#: application/templates/reset_password.html:32
+msgid "New password"
+msgstr "Nueva contraseña"
+
+#: application/templates/change_password.html:23
+#: application/templates/reset_password.html:35
+#: application/templates/reset_password.html:36
+#: application/templates/signup.html:29 application/templates/user_account.html:23
+msgid "Confirm password"
+msgstr "Confirmar contraseña"
+
+#: application/templates/change_password.html:31
+msgid "Share key"
+msgstr "Clave de compartir"
+
+#: application/templates/change_password.html:37
+msgid "Confirm Change"
+msgstr "Confirmar cambio"
+
+#: application/templates/debug_cmd.html:3
+msgid "Debug cmd"
+msgstr "Comando de depuración"
+
+#: application/templates/home.html:3
+msgid "Home"
+msgstr "Inicio"
+
+#: application/templates/home.html:10 application/templates/login.html:18
+msgid "You are in DEMO mode. Logging out will delete all data."
+msgstr "Estás en modo DEMO. Cerrar sesión eliminará todos los datos."
+
+#: application/templates/home.html:12
+msgid "Sharing Joyful News Every Step of the Way"
+msgstr "Compartiendo noticias alegres en cada paso del camino"
+
+#: application/templates/home.html:31
+msgid "Inherited From Calibre"
+msgstr "Heredado de Calibre"
+
+#: application/templates/home.html:34
+#, python-format
+msgid ""
+"Empowered by %(calibre)s, you can easily create e-books on a Python-"
+"supported online platform and seamlessly transfer them to your e-reader or "
+"other reading devices."
+msgstr ""
+"Impulsado por %(calibre)s, puedes crear fácilmente libros electrónicos en "
+"una plataforma en línea compatible con Python y transferirlos sin problemas "
+"a tu lector electrónico u otros dispositivos de lectura."
+
+#: application/templates/home.html:42
+msgid "Share Your Ideas"
+msgstr "Comparte tus ideas"
+
+#: application/templates/home.html:45
+#, python-format
+msgid ""
+"With the open-source %(kindleear)s application, you can set up your own "
+"server to deliver daily news feeds to your e-reader and effortlessly share "
+"the service with friends."
+msgstr ""
+"Con la aplicación de código abierto %(kindleear)s, puedes configurar tu "
+"propio servidor para entregar noticias diarias a tu lector electrónico y "
+"compartir el servicio sin esfuerzo con tus amigos."
+
+#: application/templates/library.html:50 application/templates/my.html:61
+msgid "Search"
+msgstr "Buscar"
+
+#: application/templates/login.html:38 application/view/login.py:213
+#: application/view/login.py:220
+msgid ""
+"The website does not allow registration. You can ask the owner for an "
+"account."
+msgstr ""
+"El sitio web no permite el registro. Puedes pedirle al propietario una "
+"cuenta."
+
+#: application/templates/logs.html:11
+msgid "Only display last 20 logs"
+msgstr "Mostrar solo los últimos 20 registros"
+
+#: application/templates/logs.html:26 application/templates/logs.html:75
+msgid "Status"
+msgstr "Estado"
+
+#: application/templates/logs.html:58
+msgid "Logs of other users"
+msgstr "Registros de otros usuarios"
+
+#: application/templates/my.html:12 application/templates/settings.html:153
+msgid "Custom RSS"
+msgstr "RSS personalizado"
+
+#: application/templates/my.html:23
+msgid "Content Embedded"
+msgstr "Contenido incrustado"
+
+#: application/templates/my.html:27
+msgid "Deliver Separately"
+msgstr "Entregar por separado"
+
+#: application/templates/my.html:46
+msgid "Subscribed"
+msgstr "Suscrito"
+
+#: application/templates/my.html:51
+msgid "Library"
+msgstr "Biblioteca"
+
+#: application/templates/my.html:51
+msgid "get more recipes"
+msgstr "obtener más recetas"
+
+#: application/templates/my.html:68
+msgid "Subscription to selected recipe successful."
+msgstr "Suscripción a la receta seleccionada exitosa."
+
+#: application/templates/my.html:71
+msgid "Bookmarklet"
+msgstr "Marcador"
+
+#: application/templates/my.html:75
+msgid "Send to Kindle"
+msgstr "Enviar a Kindle"
+
+#: application/templates/my.html:79
+msgid "Subscribe with KindleEar"
+msgstr "Suscribirse con KindleEar"
+
+#: application/templates/my.html:82
+msgid "Drag and drop this link to your bookmarks"
+msgstr "Arrastra y suelta este enlace en tus marcadores"
+
+#: application/templates/my.html:86
+msgid "Chrome extension"
+msgstr "Extensión de Chrome"
+
+#: application/templates/my.html:87
+msgid "Edge extension"
+msgstr "Extensión de Edge"
+
+#: application/templates/my.html:89
+msgid "Browser extensions also available"
+msgstr "También hay extensiones para navegadores"
+
+#: application/templates/reader.html:57
+msgid "Push current book"
+msgstr "Enviar libro actual"
+
+#: application/templates/reader.html:63
+msgid "Push current article"
+msgstr "Enviar artículo actual"
+
+#: application/templates/reader.html:71
+msgid "Delete selected books"
+msgstr "Eliminar libros seleccionados"
+
+#: application/templates/reader.html:77
+msgid "Allow click links"
+msgstr "Permitir hacer clic en enlaces"
+
+#: application/templates/reader.html:83
+msgid "Top-left dict mode"
+msgstr "Modo diccionario en esquina superior izquierda"
+
+#: application/templates/reader.html:89
+msgid "Dark mode"
+msgstr "Modo oscuro"
+
+#: application/templates/reader.html:95
+msgid "eInk mode"
+msgstr "Modo eInk"
+
+#: application/templates/reader.html:101
+msgid "Increase font size"
+msgstr "Aumentar tamaño de fuente"
+
+#: application/templates/reader.html:107
+msgid "Decrease font size"
+msgstr "Disminuir tamaño de fuente"
+
+#: application/templates/reader.html:113
+msgid "Visualize Touch Regions"
+msgstr "Visualizar regiones táctiles"
+
+#: application/templates/reader.html:119
+msgid "Help"
+msgstr "Ayuda"
+
+#: application/templates/reader.html:125 application/templates/reader_404.html:135
+msgid "Menu"
+msgstr "Menú"
+
+#: application/templates/reader.html:139
+msgid "Collapse all"
+msgstr "Contraer todo"
+
+#: application/templates/reader.html:144
+msgid "Expand all"
+msgstr "Expandir todo"
+
+#: application/templates/reader.html:149 application/templates/reader_404.html:140
+msgid "Prev"
+msgstr "Anterior"
+
+#: application/templates/reader.html:154 application/templates/reader_404.html:143
+msgid "Next page"
+msgstr "Siguiente página"
+
+#: application/templates/reader.html:192
+msgid "Pushed successfully."
+msgstr "Enviado con éxito."
+
+#: application/templates/reader.html:193
+msgid "There are currently no books or articles being read."
+msgstr "Actualmente no hay libros ni artículos siendo leídos."
+
+#: application/templates/reset_password.html:3
+#: application/templates/reset_password.html:41
+msgid "Reset password"
+msgstr "Restablecer contraseña"
+
+#: application/templates/settings.html:14
+#, python-brace-format
+msgid "Your account will pause after {0}, please log in again before it expires."
+msgstr ""
+"Tu cuenta se pausará después de {0}, por favor inicia sesión nuevamente "
+"antes de que expire."
+
+#: application/templates/settings.html:23
+msgid "Base"
+msgstr "Base"
+
+#: application/templates/settings.html:25
+msgid "Auto delivery"
+msgstr "Entrega automática"
+
+#: application/templates/settings.html:28
+msgid "Recipes and custom RSS"
+msgstr "Recetas y RSS personalizadas"
+
+#: application/templates/settings.html:29
+msgid "Recipes only"
+msgstr "Solo recetas"
+
+#: application/templates/settings.html:30
+msgid "Disable all"
+msgstr "Deshabilitar todo"
+
+#: application/templates/settings.html:34
+msgid "Kindle E-mail"
+msgstr "Correo electrónico de Kindle"
+
+#: application/templates/settings.html:35
+msgid "Seperated by comma"
+msgstr "Separado por coma"
+
+#: application/templates/settings.html:39
+msgid "Delivery mode"
+msgstr "Modo de entrega"
+
+#: application/templates/settings.html:42
+msgid "Email delivery & online reading"
+msgstr "Entrega por correo electrónico y lectura en línea"
+
+#: application/templates/settings.html:43
+msgid "Email delivery"
+msgstr "Entrega por correo electrónico"
+
+#: application/templates/settings.html:44
+msgid "Online reading"
+msgstr "Lectura en línea"
+
+#: application/templates/settings.html:48
+msgid "Retention days for online books"
+msgstr "Días de retención para libros en línea"
+
+#: application/templates/settings.html:48
+msgid "Web shelf"
+msgstr "Estante web"
+
+#: application/templates/settings.html:53 application/templates/settings.html:176
+msgid "2 Days"
+msgstr "2 días"
+
+#: application/templates/settings.html:54 application/templates/settings.html:177
+msgid "3 Days"
+msgstr "3 días"
+
+#: application/templates/settings.html:55 application/templates/settings.html:178
+msgid "4 Days"
+msgstr "4 días"
+
+#: application/templates/settings.html:56 application/templates/settings.html:179
+msgid "5 Days"
+msgstr "5 días"
+
+#: application/templates/settings.html:57 application/templates/settings.html:180
+msgid "6 Days"
+msgstr "6 días"
+
+#: application/templates/settings.html:64
+msgid "Time zone"
+msgstr "Zona horaria"
+
+#: application/templates/settings.html:89
+msgid "Delivery time"
+msgstr "Hora de entrega"
+
+#: application/templates/settings.html:97
+msgid "Book type"
+msgstr "Tipo de libro"
+
+#: application/templates/settings.html:104
+msgid "Determines final file size"
+msgstr "Determina el tamaño final del archivo"
+
+#: application/templates/settings.html:104
+msgid "Device type"
+msgstr "Tipo de dispositivo"
+
+#: application/templates/settings.html:113
+msgid "Title format"
+msgstr "Formato de título"
+
+#: application/templates/settings.html:116
+msgid "Title Only"
+msgstr "Solo título"
+
+#: application/templates/settings.html:130
+msgid "Remove hyperlinks"
+msgstr "Eliminar hipervínculos"
+
+#: application/templates/settings.html:133
+msgid "Do not remove hyperlinks"
+msgstr "No eliminar hipervínculos"
+
+#: application/templates/settings.html:134
+msgid "Remove image links"
+msgstr "Eliminar enlaces de imagen"
+
+#: application/templates/settings.html:135
+msgid "Remove text links"
+msgstr "Eliminar enlaces de texto"
+
+#: application/templates/settings.html:136
+msgid "Remove all hyperlinks"
+msgstr "Eliminar todos los hipervínculos"
+
+#: application/templates/settings.html:140
+msgid "Navbar"
+msgstr "Barra de navegación"
+
+#: application/templates/settings.html:144
+msgid "Top Center"
+msgstr "Centro superior"
+
+#: application/templates/settings.html:145
+msgid "Top Left"
+msgstr "Superior izquierdo"
+
+#: application/templates/settings.html:146
+msgid "Bottom Center"
+msgstr "Centro inferior"
+
+#: application/templates/settings.html:147
+msgid "Bottom Left"
+msgstr "Inferior izquierdo"
+
+#: application/templates/settings.html:159
+msgid "Sets the lookup dictionary"
+msgstr "Establece el diccionario de búsqueda"
+
+#: application/templates/settings.html:171
+msgid "Oldest article"
+msgstr "Artículo más antiguo"
+
+#: application/templates/settings.html:185
+msgid "Time format"
+msgstr "Formato de hora"
+
+#: application/templates/settings.html:198
+msgid "Author format"
+msgstr "Formato de autor"
+
+#: application/templates/settings.html:215
+msgid "Send Mail Service"
+msgstr "Servicio de envío de correo"
+
+#: application/templates/settings.html:217
+msgid "Service"
+msgstr "Servicio"
+
+#: application/templates/settings.html:225
+msgid "ApiKey"
+msgstr "ApiKey"
+
+#: application/templates/settings.html:229
+msgid "SecretKey"
+msgstr "SecretKey"
+
+#: application/templates/settings.html:237
+msgid "Port"
+msgstr "Puerto"
+
+#: application/templates/settings.html:249
+msgid "Save path"
+msgstr "Ruta de guardado"
+
+#: application/templates/settings.html:257
+#, python-format
+msgid ""
+"Important: Please activate your kindle firstly, then goto %(personal)s Page "
+"and add %(sender)s to 'Approved Personal Document E-mail List'."
+msgstr ""
+"Importante: Por favor, active su Kindle primero, luego vaya a la página "
+"%(personal)s y agregue %(sender)s a la 'Lista de correos electrónicos "
+"aprobados para documentos personales'."
+
+#: application/templates/settings.html:257
+msgid "Personal Document Settings"
+msgstr "Configuración de documentos personales"
+
+#: application/templates/settings.html:263
+#, python-format
+msgid ""
+"You have not yet set up your email address. Please go to the %(admin)s page "
+"to add your email address firstly."
+msgstr ""
+"Aún no ha configurado su dirección de correo electrónico. Por favor, vaya a "
+"la página %(admin)s para agregar su dirección de correo electrónico primero."
+
+#: application/templates/settings.html:271
+msgid "Send Test Email"
+msgstr "Enviar correo electrónico de prueba"
+
+#: application/templates/signup.html:38
+msgid "Invitation code"
+msgstr "Código de invitación"
+
+#: application/templates/user_account.html:3
+msgid "User account"
+msgstr "Cuenta de usuario"
+
+#: application/templates/user_account.html:42
+msgid "Never expire"
+msgstr "Nunca expira"
+
+#: application/templates/webmail.html:3
+msgid "Webmail"
+msgstr "Correo web"
+
+#: application/templates/webmail.html:17
+msgid "Refresh"
+msgstr "Actualizar"
+
+#: application/templates/webmail.html:18
+msgid "Read/Unread"
+msgstr "Leído/No leído"
+
+#: application/templates/webmail.html:19
+msgid "Reply"
+msgstr "Responder"
+
+#: application/templates/webmail.html:20
+msgid "Forward"
+msgstr "Reenviar"
+
+#: application/templates/webmail.html:21
+msgid "Fwd as Attach"
+msgstr "Reenviar como adjunto"
+
+#: application/templates/word_lookup.html:71
+msgid "Word"
+msgstr "Palabra"
+
+#: application/view/admin.py:48 application/view/adv.py:505
+#: application/view/adv.py:596 application/view/settings.py:67
+#: application/view/translator.py:88 application/view/translator.py:172
+#: application/view/translator.py:254
+msgid "Settings Saved!"
+msgstr "¡Configuración guardada!"
+
+#: application/view/admin.py:57 application/view/admin.py:64
+#: application/view/admin.py:91
+msgid "Add account"
+msgstr "Agregar cuenta"
+
+#: application/view/admin.py:63 application/view/admin.py:103
+#: application/view/admin.py:135
+msgid "You do not have sufficient privileges."
+msgstr "No tiene suficientes privilegios."
+
+#: application/view/admin.py:79 application/view/login.py:55
+#: application/view/login.py:238
+msgid "The username includes unsafe chars."
+msgstr "El nombre de usuario incluye caracteres no seguros."
+
+#: application/view/admin.py:83 application/view/login.py:240
+msgid "Already exist the username."
+msgstr "El nombre de usuario ya existe."
+
+#: application/view/admin.py:88
+msgid "The password includes non-ascii chars."
+msgstr "La contraseña incluye caracteres no ASCII."
+
+#: application/view/admin.py:107 application/view/admin.py:132
+#: application/view/admin.py:163 application/view/extension.py:32
+#: application/view/extension.py:61
+#, python-brace-format
+msgid "The username '{}' does not exist."
+msgstr "El nombre de usuario '{}' no existe."
+
+#: application/view/admin.py:123
+msgid "The password will not be changed if the fields are empties."
+msgstr "La contraseña no se cambiará si los campos están vacíos."
+
+#: application/view/admin.py:130 application/view/admin.py:184
+msgid "Change"
+msgstr "Cambiar"
+
+#: application/view/admin.py:181
+msgid "Change success."
+msgstr "Cambio exitoso."
+
+#: application/view/admin.py:194
+msgid "The old password is wrong."
+msgstr "La contraseña anterior es incorrecta."
+
+#: application/view/admin.py:196
+msgid "Changes saved successfully."
+msgstr "Cambios guardados con éxito."
+
+#: application/view/adv.py:103
+msgid "The mail address is not in the whitelist."
+msgstr "La dirección de correo no está en la lista blanca."
+
+#: application/view/adv.py:108
+msgid "Can not read uploaded file."
+msgstr "No se puede leer el archivo cargado."
+
+#: application/view/adv.py:110
+msgid "The hook file is too large."
+msgstr "El archivo hook es demasiado grande."
+
+#: application/view/adv.py:118
+msgid ""
+"Failed to decode the file. Please ensure that your file is saved in utf-8 "
+"encoding."
+msgstr ""
+"No se pudo decodificar el archivo. Asegúrate de que tu archivo esté guardado"
+" con codificación utf-8."
+
+#: application/view/adv.py:123
+msgid "Failed to save the hook. Error:"
+msgstr "Error al guardar el hook. Error:"
+
+#: application/view/adv.py:137 application/view/adv.py:151
+msgid "The hook does not exist."
+msgstr "El hook no existe."
+
+#: application/view/adv.py:172 application/view/adv.py:173
+#: application/view/adv.py:174 application/view/adv.py:175
+#: application/view/adv.py:176 application/view/adv.py:177
+#: application/view/adv.py:178 application/view/adv.py:179
+#: application/view/adv.py:180 application/view/adv.py:181
+#, python-brace-format
+msgid "Append hyperlink '{}' to article"
+msgstr "Agregar hipervínculo '{}' al artículo"
+
+#: application/view/adv.py:172 application/view/adv.py:173
+#: application/view/adv.py:174 application/view/adv.py:175
+#: application/view/adv.py:176
+#, python-brace-format
+msgid "Save to {}"
+msgstr "Guardar en {}"
+
+#: application/view/adv.py:172
+msgid "evernote"
+msgstr "evernote"
+
+#: application/view/adv.py:173
+msgid "wiz"
+msgstr "wiz"
+
+#: application/view/adv.py:174
+msgid "pocket"
+msgstr "pocket"
+
+#: application/view/adv.py:175
+msgid "instapaper"
+msgstr "instapaper"
+
+#: application/view/adv.py:176
+msgid "wallabag"
+msgstr "wallabag"
+
+#: application/view/adv.py:177 application/view/adv.py:178
+#: application/view/adv.py:179 application/view/adv.py:180
+#, python-brace-format
+msgid "Share on {}"
+msgstr "Compartir en {}"
+
+#: application/view/adv.py:177
+msgid "weibo"
+msgstr "weibo"
+
+#: application/view/adv.py:178
+msgid "facebook"
+msgstr "facebook"
+
+#: application/view/adv.py:180
+msgid "tumblr"
+msgstr "tumblr"
+
+#: application/view/adv.py:181
+msgid "Open in browser"
+msgstr "Abrir en el navegador"
+
+#: application/view/adv.py:182
+msgid "Append qrcode of url to article"
+msgstr "Agregar código QR de la URL al artículo"
+
+#: application/view/adv.py:449 application/view/share.py:54
+#: application/view/subscribe.py:250
+#, python-brace-format
+msgid "Unknown command: {}"
+msgstr "Comando desconocido: {}"
+
+#: application/view/adv.py:507 application/view/adv.py:598
+msgid "The format is invalid."
+msgstr "El formato es inválido."
+
+#: application/view/adv.py:630
+#, python-brace-format
+msgid "Authorization Error!<br/>{}"
+msgstr "¡Error de autorización!<br/>{}"
+
+#: application/view/adv.py:651
+msgid "Success authorized by Pocket!"
+msgstr "¡Autorización exitosa por Pocket!"
+
+#: application/view/adv.py:657
+#, python-brace-format
+msgid "Failed to request authorization of Pocket!<hr/>See details below:<br/><br/>{}"
+msgstr ""
+"¡Error al solicitar autorización de Pocket!<hr/>Vea los detalles a "
+"continuación:<br/><br/>{}"
+
+#: application/view/adv.py:678
+msgid "The Instapaper service encountered an error. Please try again later."
+msgstr "El servicio de Instapaper encontró un error. Por favor, intente más tarde."
+
+#: application/view/adv.py:691
+#, python-brace-format
+msgid "Request type [{}] unsupported"
+msgstr "Tipo de solicitud [{}] no compatible"
+
+#: application/view/deliver.py:82 application/view/login.py:185
+#: application/view/share.py:41
+msgid "The username does not exist or the email is empty."
+msgstr "El nombre de usuario no existe o el correo electrónico está vacío."
+
+#: application/view/deliver.py:109
+msgid "The following recipes has been added to the push queue."
+msgstr "Las siguientes recetas han sido añadidas a la cola de envío."
+
+#: application/view/deliver.py:112
+msgid "There are no recipes to deliver."
+msgstr "No hay recetas para entregar."
+
+#: application/view/extension.py:69
+msgid "The rules parameter is invalid."
+msgstr "El parámetro de reglas es inválido."
+
+#: application/view/library.py:32
+#, python-brace-format
+msgid "Cannot fetch data from {}, status: {}"
+msgstr "No se pueden obtener datos de {}, estado: {}"
+
+#: application/view/library.py:48 application/view/subscribe.py:238
+#: application/view/subscribe.py:380 application/view/subscribe.py:409
+#: application/view/subscribe.py:416 application/view/translator.py:30
+msgid "The recipe does not exist."
+msgstr "La receta no existe."
+
+#: application/view/login.py:38 application/view/login.py:92
+#, python-brace-format
+msgid "Please use {}/{} to login at first time."
+msgstr "Por favor, utilice {}/{} para iniciar sesión por primera vez."
+
+#: application/view/login.py:51
+msgid "Username is empty."
+msgstr "El nombre de usuario está vacío."
+
+#: application/view/login.py:53
+msgid "The len of username reached the limit of 25 chars."
+msgstr "La longitud del nombre de usuario alcanzó el límite de 25 caracteres."
+
+#: application/view/login.py:96
+msgid "Forgot password?"
+msgstr "¿Olvidó la contraseña?"
+
+#: application/view/login.py:164 application/view/login.py:291
+msgid "The token is wrong or expired."
+msgstr "El token es incorrecto o ha expirado."
+
+#: application/view/login.py:167
+msgid "Please input the correct username and email to reset password."
+msgstr ""
+"Por favor, ingrese el nombre de usuario y correo electrónico correctos para "
+"restablecer la contraseña."
+
+#: application/view/login.py:169
+#, python-brace-format
+msgid "The email of account '{name}' is {email}."
+msgstr "El correo electrónico de la cuenta '{name}' es {email}."
+
+#: application/view/login.py:190
+msgid "Reset password success, Please close this page and login again."
+msgstr ""
+"Contraseña restablecida con éxito, por favor cierre esta página e inicie "
+"sesión nuevamente."
+
+#: application/view/login.py:193
+msgid "The email you input is not associated with this account."
+msgstr "El correo electrónico que ingresó no está asociado con esta cuenta."
+
+#: application/view/login.py:202
+msgid "The link to reset your password has been sent to your email."
+msgstr ""
+"El enlace para restablecer su contraseña ha sido enviado a su correo "
+"electrónico."
+
+#: application/view/login.py:203
+msgid "Please check your email inbox within 24 hours."
+msgstr "Por favor, revise su bandeja de entrada dentro de 24 horas."
+
+#: application/view/login.py:234
+msgid "The invitation code is invalid."
+msgstr "El código de invitación es inválido."
+
+#: application/view/login.py:242
+msgid "Failed to create an account. Please contact the administrator for assistance."
+msgstr ""
+"Error al crear la cuenta. Por favor, contacte al administrador para obtener "
+"asistencia."
+
+#: application/view/login.py:252
+msgid "Successfully created account."
+msgstr "Cuenta creada con éxito."
+
+#: application/view/login.py:263
+msgid "Reset KindleEar password"
+msgstr "Restablecer la contraseña de KindleEar"
+
+#: application/view/login.py:264
+msgid "This is an automated email. Please do not reply to it."
+msgstr "Este es un correo electrónico automatizado. Por favor, no responda."
+
+#: application/view/login.py:265
+msgid "You can click the following link to reset your KindleEar password."
+msgstr ""
+"Puede hacer clic en el siguiente enlace para restablecer su contraseña de "
+"KindleEar."
+
+#: application/view/reader.py:88
+msgid "The article is missing?"
+msgstr "¿Falta el artículo?"
+
+#: application/view/reader.py:190 application/view/translator.py:121
+#: application/view/translator.py:205 application/view/translator.py:287
+msgid "The text is empty."
+msgstr "El texto está vacío."
+
+#: application/view/reader.py:239
+#, python-brace-format
+msgid "No definitions found for '{}'."
+msgstr "No se encontraron definiciones para '{}'."
+
+#: application/view/reader.py:240
+msgid "Did you mean?"
+msgstr "¿Quiso decir?"
+
+#: application/view/reader.py:324 application/view/reader.py:331
+#, python-brace-format
+msgid "Failed to push: {}"
+msgstr "Error al enviar: {}"
+
+#: application/view/reader.py:379
+msgid "Failed to create ebook."
+msgstr "Error al crear el ebook."
+
+#: application/view/settings.py:132
+msgid ""
+"You have not yet set up your email address. Please go to the 'Account' page "
+"to add your email address firstly."
+msgstr ""
+"Aún no ha configurado su dirección de correo electrónico. Por favor, vaya a "
+"la página 'Cuenta' para agregar su dirección de correo electrónico primero."
+
+#: application/view/settings.py:216
+msgid "English"
+msgstr "Inglés"
+
+#: application/view/settings.py:217
+msgid "Simplified Chinese"
+msgstr "Chino simplificado"
+
+#: application/view/settings.py:218
+msgid "Traditional Chinese"
+msgstr "Chino tradicional"
+
+#: application/view/settings.py:219
+msgid "French"
+msgstr "Francés"
+
+#: application/view/settings.py:220
+msgid "Spanish"
+msgstr "Español"
+
+#: application/view/settings.py:221
+msgid "Portuguese"
+msgstr "Portugués"
+
+#: application/view/settings.py:222
+msgid "German"
+msgstr "Alemán"
+
+#: application/view/settings.py:223
+msgid "Italian"
+msgstr "Italiano"
+
+#: application/view/settings.py:224
+msgid "Japanese"
+msgstr "Japonés"
+
+#: application/view/settings.py:225
+msgid "Russian"
+msgstr "Ruso"
+
+#: application/view/settings.py:226
+msgid "Turkish"
+msgstr "Turco"
+
+#: application/view/settings.py:227
+msgid "Korean"
+msgstr "Coreano"
+
+#: application/view/settings.py:228
+msgid "Arabic"
+msgstr "Árabe"
+
+#: application/view/settings.py:229
+msgid "Czech"
+msgstr "Checo"
+
+#: application/view/settings.py:230
+msgid "Dutch"
+msgstr "Neerlandés"
+
+#: application/view/settings.py:231
+msgid "Greek"
+msgstr "Griego"
+
+#: application/view/settings.py:232
+msgid "Hindi"
+msgstr "Hindi"
+
+#: application/view/settings.py:233
+msgid "Malaysian"
+msgstr "Malayo"
+
+#: application/view/settings.py:234
+msgid "Bengali"
+msgstr "Bengalí"
+
+#: application/view/settings.py:235
+msgid "Persian"
+msgstr "Persa"
+
+#: application/view/settings.py:236
+msgid "Urdu"
+msgstr "Urdu"
+
+#: application/view/settings.py:237
+msgid "Swahili"
+msgstr "Swahili"
+
+#: application/view/settings.py:238
+msgid "Vietnamese"
+msgstr "Vietnamita"
+
+#: application/view/settings.py:239
+msgid "Punjabi"
+msgstr "Punyabí"
+
+#: application/view/settings.py:240
+msgid "Javanese"
+msgstr "Javanés"
+
+#: application/view/settings.py:241
+msgid "Tagalog"
+msgstr "Tagalo"
+
+#: application/view/settings.py:242
+msgid "Hausa"
+msgstr "Hausa"
+
+#: application/view/settings.py:243
+msgid "Thai"
+msgstr "Tailandés"
+
+#: application/view/settings.py:244
+msgid "Polish"
+msgstr "Polaco"
+
+#: application/view/settings.py:245
+msgid "Romanian"
+msgstr "Rumano"
+
+#: application/view/settings.py:246
+msgid "Hungarian"
+msgstr "Húngaro"
+
+#: application/view/settings.py:247
+msgid "Swedish"
+msgstr "Sueco"
+
+#: application/view/settings.py:248
+msgid "Hebrew"
+msgstr "Hebreo"
+
+#: application/view/settings.py:249
+msgid "Norwegian"
+msgstr "Noruego"
+
+#: application/view/settings.py:250
+msgid "Finnish"
+msgstr "Finlandés"
+
+#: application/view/settings.py:251
+msgid "Danish"
+msgstr "Danés"
+
+#: application/view/settings.py:252
+msgid "Ukrainian"
+msgstr "Ucraniano"
+
+#: application/view/settings.py:253
+msgid "Tamil"
+msgstr "Tamil"
+
+#: application/view/settings.py:254
+msgid "Marathi"
+msgstr "Maratí"
+
+#: application/view/settings.py:255
+msgid "Burmese"
+msgstr "Birmana"
+
+#: application/view/settings.py:256
+msgid "Amharic"
+msgstr "Amárico"
+
+#: application/view/settings.py:257
+msgid "Azerbaijani"
+msgstr "Azerbaiyano"
+
+#: application/view/settings.py:258
+msgid "Kazakh"
+msgstr "Kazajo"
+
+#: application/view/settings.py:259
+msgid "Serbian"
+msgstr "Serbio"
+
+#: application/view/settings.py:260
+msgid "Croatian"
+msgstr "Croata"
+
+#: application/view/settings.py:261
+msgid "Slovak"
+msgstr "Eslovaco"
+
+#: application/view/settings.py:262
+msgid "Bulgarian"
+msgstr "Búlgaro"
+
+#: application/view/settings.py:263
+msgid "Icelandic"
+msgstr "Islandés"
+
+#: application/view/settings.py:264
+msgid "Lithuanian"
+msgstr "Lituano"
+
+#: application/view/settings.py:265
+msgid "Latvian"
+msgstr "Letón"
+
+#: application/view/settings.py:266
+msgid "Estonian"
+msgstr "Estonio"
+
+#: application/view/settings.py:267
+msgid "Macedonian"
+msgstr "Macedonio"
+
+#: application/view/settings.py:268
+msgid "Albanian"
+msgstr "Albanés"
+
+#: application/view/settings.py:269
+msgid "Galician"
+msgstr "Gallego"
+
+#: application/view/settings.py:270
+msgid "Welsh"
+msgstr "Galés"
+
+#: application/view/settings.py:271
+msgid "Basque"
+msgstr "Vasco"
+
+#: application/view/settings.py:272
+msgid "Nepali"
+msgstr "Nepalí"
+
+#: application/view/share.py:60
+#, python-brace-format
+msgid "There is no {} email yet."
+msgstr "Aún no hay correo electrónico de {}."
+
+#: application/view/share.py:108 application/view/share.py:133
+#: application/view/share.py:155 application/view/share.py:177
+#, python-brace-format
+msgid "Saved to your {} account."
+msgstr "Guardado en su cuenta de {}."
+
+#: application/view/share.py:111 application/view/share.py:129
+#: application/view/share.py:158 application/view/share.py:179
+#, python-brace-format
+msgid "Failed save to {}."
+msgstr "Error al guardar en {}."
+
+#: application/view/share.py:112 application/view/share.py:130
+#: application/view/share.py:159 application/view/share.py:180
+msgid "Reason :"
+msgstr "Razón:"
+
+#: application/view/share.py:121
+#, python-brace-format
+msgid "Unauthorized {} account!"
+msgstr "¡Cuenta {} no autorizada!"
+
+#: application/view/share.py:134
+msgid "See details below:"
+msgstr "Vea los detalles a continuación:"
+
+#: application/view/share.py:157
+#, python-brace-format
+msgid "Unknown: {}"
+msgstr "Desconocido: {}"
+
+#: application/view/subscribe.py:81 application/view/subscribe.py:167
+msgid "Duplicated subscription!"
+msgstr "¡Suscripción duplicada!"
+
+#: application/view/subscribe.py:126
+msgid "The Title or Url is empty."
+msgstr "El título o la URL están vacíos."
+
+#: application/view/subscribe.py:139
+msgid "Failed to fetch the recipe."
+msgstr "Error al obtener la receta."
+
+#: application/view/subscribe.py:153 application/view/subscribe.py:331
+msgid "Failed to save the recipe. Error:"
+msgstr "Error al guardar la receta. Error:"
+
+#: application/view/subscribe.py:195
+msgid "The Rss does not exist."
+msgstr "El RSS no existe."
+
+#: application/view/subscribe.py:278
+msgid "You can only delete the uploaded recipe."
+msgstr "Solo puede eliminar la receta cargada."
+
+#: application/view/subscribe.py:283
+msgid "The recipe have been subscribed, please unsubscribe it before delete."
+msgstr ""
+"La receta ha sido suscrita, por favor cancelé la suscripción antes de "
+"eliminarla."
+
+#: application/view/subscribe.py:304 application/view/translator.py:51
+#: application/view/translator.py:104 application/view/translator.py:117
+#: application/view/translator.py:140 application/view/translator.py:188
+#: application/view/translator.py:201 application/view/translator.py:230
+#: application/view/translator.py:270 application/view/translator.py:283
+msgid "This recipe has not been subscribed to yet."
+msgstr "Esta receta aún no ha sido suscrita."
+
+#: application/view/subscribe.py:318
+msgid "Can not read uploaded file, Error:"
+msgstr "No se puede leer el archivo cargado, Error:"
+
+#: application/view/subscribe.py:326
+msgid ""
+"Failed to decode the recipe. Please ensure that your recipe is saved in "
+"utf-8 encoding."
+msgstr ""
+"Error al decodificar la receta. Asegúrese de que su receta esté guardada con"
+" codificación utf-8."
+
+#: application/view/subscribe.py:349
+msgid "Cannot find any subclass of BasicNewsRecipe."
+msgstr "No se puede encontrar ninguna subclase de BasicNewsRecipe."
+
+#: application/view/subscribe.py:354
+msgid "The recipe is already in the library."
+msgstr "La receta ya está en la biblioteca."
+
+#: application/view/subscribe.py:387
+msgid "The login information for this recipe has been cleared."
+msgstr "La información de inicio de sesión de esta receta ha sido borrada."
+
+#: application/view/subscribe.py:391
+msgid "The login information for this recipe has been saved."
+msgstr "La información de inicio de sesión de esta receta ha sido guardada."
+
+#: application/view/translator.py:81 application/view/translator.py:165
+msgid "The api key is required."
+msgstr "Se requiere la clave API."
+
+#~ msgid "Src"
+#~ msgstr "Código"
+
+#~ msgid "Delete hook"
+#~ msgstr "Eliminar hook"
+

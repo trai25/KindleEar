@@ -7,12 +7,13 @@ from typing import Union
 from collections import defaultdict
 from flask import Blueprint, request, current_app as app
 from ..base_handler import *
-from ..utils import filesizeformat
+from ..ke_utils import filesizeformat
 from ..back_end.send_mail_adpt import send_to_kindle
 from ..back_end.db_models import *
+from urlopener import UrlOpener
 from calibre.web.feeds.recipes import compile_recipe
-from ..lib.recipe_helper import *
-from ..lib.build_ebook import recipes_to_ebook
+from recipe_helper import *
+from build_ebook import convert_book
 
 bpWorker = Blueprint('bpWorker', __name__)
 
@@ -69,40 +70,57 @@ def WorkerImpl(userName: str, recipeId: Union[list,str,None]=None, reason='cron'
 
     startTime = time.time()
 
+    #设置全局代理
+    UrlOpener.set_proxy(user.cfg('proxy'))
+    
     #编译recipe
     srcDict = GetAllRecipeSrc(user, recipeId) #返回一个字典，键名为title，元素为 [BookedRecipe, Recipe, src]
     recipes = defaultdict(list) #用于保存编译好的recipe代码对象
     userCss = user.get_extra_css()
     combine_css = lambda c1, c2=userCss: f'{c1}\n\n{c2}' if c1 else c2
+    coverEnable = None if user.covers.get('enable', '') else False
+
     for title, (bked, recipeDb, src) in srcDict.items():
         try:
-            ro = compile_recipe(src)
+            rc = compile_recipe(src) #返回为一个类，而不是实例
         except Exception as e:
             log.warning('Failed to compile recipe {}: {}'.format(title, str(e)))
             continue
-        if not ro:
+        if not rc:
             log.warning('Failed to compile recipe {}: {}'.format(title, 'Cannot find any subclass of BasicNewsRecipe.'))
             continue
 
-        if not ro.language or ro.language == 'und':
-            ro.language = user.book_cfg('language')
+        if (len(srcDict) > 1) or (rc.language in (None, '', 'und')):
+            rc.language = user.book_cfg('language')
+        elif rc.language:
+            rc.language = rc.language.replace('_', '-').lower()
             
-        ro.delivery_reason = reason
+        rc.delivery_reason = reason
         #合并自定义css
-        ro.extra_css = combine_css(ro.extra_css) #type:ignore
-        ro.translator = bked.translator.copy() #设置网页翻译器信息
-        ro.tts = bked.tts.copy() #文本转语音设置，需要中途修改tts内容
+        rc.extra_css = combine_css(rc.extra_css) #type:ignore
+        rc.translator = bked.translator.copy() #设置网页翻译器信息
+        rc.tts = bked.tts.copy() #文本转语音设置，需要中途修改tts内容
+        rc.summarizer = bked.summarizer.copy() #AI摘要器的配置信息
+
+        #多个书籍：使用用户全局设置
+        #单一书籍：如果书籍没有设置封面，则使用用户全局设置
+        if len(srcDict) > 1:
+            rc.cover_url = coverEnable
+            rc.get_cover_url = lambda self: coverEnable
+        elif (coverEnable == False) and (rc.cover_url is None) and ('get_cover_url' not in rc.__dict__):
+            rc.cover_url = coverEnable
+            rc.get_cover_url = lambda self: getattr(self, 'cover_url', None)
         
         #如果需要登录网站
-        if ro.needs_subscription:
-            ro.username = bked.account #type:ignore
-            ro.password = bked.password #type:ignore
+        if rc.needs_subscription:
+            rc.username = bked.account #type:ignore
+            rc.password = bked.password #type:ignore
         
         if bked.separated:
-            recipes[ro.title].append(ro)
+            recipes[rc.title].append(rc)
         else:
-            recipes[user.book_cfg('title')].append(ro)
-    
+            recipes[user.book_cfg('title')].append(rc)
+        
     #逐个生成电子书推送
     lastSendTime = 0
     bookType = user.book_cfg('type')
@@ -111,7 +129,7 @@ def WorkerImpl(userName: str, recipeId: Union[list,str,None]=None, reason='cron'
     for title, roList in recipes.items():
         if len(roList) == 1:
             title = roList[0].title
-        book = recipes_to_ebook(roList, user)
+        book = convert_book(roList, 'recipe', user)
         
         #如果有TTS音频，先推送音频
         ext, audio = MergeAudioSegment(roList)
@@ -140,13 +158,13 @@ def WorkerImpl(userName: str, recipeId: Union[list,str,None]=None, reason='cron'
         elif not audio:
             save_delivery_log(user, title, 0, status='nonews')
 
-    elaspTime = (time.time() - startTime) / 60.0
+    elapsedTime = (time.time() - startTime) / 60.0
     if ret:
         ret = '\n'.join(ret)
         if '\n' in ret:
-            ret += f'\nConsumed time: {elaspTime:.1f} minutes.'
+            ret += f'\nTime taken: {elapsedTime:.1f} minutes.'
         else:
-            ret += f' [Consumed time: {elaspTime:.1f} minutes].'
+            ret += f' [Time taken: {elapsedTime:.1f} minutes].'
     else:
         titles = ', '.join(recipes.keys())
         ret = f"There are no new feeds available: {userName}: [{titles}]"
@@ -157,25 +175,32 @@ def WorkerImpl(userName: str, recipeId: Union[list,str,None]=None, reason='cron'
 #在已订阅的Recipe或自定义RSS列表创建Recipe源码列表
 #返回一个字典，键名为title，元素为 [BookedRecipe, Recipe, src]
 def GetAllRecipeSrc(user, idList):
+    bkeds = []
+    for id_ in idList:
+        recipeType, dbId = Recipe.type_and_id(id_)
+        bked = BookedRecipe.get_or_none(BookedRecipe.recipe_id == id_)
+        #针对没有启用自定义RSS推送的情况，创建一个临时BookedRecipe对象但不保存到数据库
+        recipe = Recipe.get_by_id_or_none(dbId) if (recipeType != 'builtin') else None
+        if not bked and recipe:
+            bked = recipe.cloneToBookedRecipe()
+        bkeds.append({'recipeId': id_, 'recipeType': recipeType, 'dbId': dbId, 'bked': bked, 
+            'recipe': recipe})
+
     srcDict = {}
-    for bked in filter(bool, [BookedRecipe.get_or_none(BookedRecipe.recipe_id == id_) for id_ in idList]):
-        recipeId = bked.recipe_id
-        recipeType, dbId = Recipe.type_and_id(recipeId)
-        if recipeType == 'builtin':
-            bnInfo = GetBuiltinRecipeInfo(recipeId)
-            src = GetBuiltinRecipeSource(recipeId)
+    for item in bkeds:
+        recipe = item['recipe']
+        if item['recipeType'] == 'builtin':
+            bnInfo = GetBuiltinRecipeInfo(item['recipeId'])
+            src = GetBuiltinRecipeSource(item['recipeId'])
             if bnInfo and src:
-                srcDict[bnInfo.get('title', '')] = [bked, bnInfo, src]
-            continue
-        
-        recipe = Recipe.get_by_id_or_none(dbId)
-        if recipe:
+                srcDict[bnInfo.get('title', '')] = [item['bked'], bnInfo, src]
+        elif recipe:
             title = recipe.title
-            if recipeType == 'upload': #上传的Recipe
-                srcDict[title] = [bked, recipe, recipe.src]
+            if item['recipeType'] == 'upload': #上传的Recipe
+                srcDict[title] = [item['bked'], recipe, recipe.src]
             else: #自定义RSS
                 src = GenerateRecipeSource(title, [(title, recipe.url)], user, isfulltext=recipe.isfulltext)
-                srcDict[title] = [bked, recipe, src]
+                srcDict[title] = [item['bked'], recipe, src]
     return srcDict
 
 #返回可用的mp3cat执行文件路径
@@ -229,7 +254,7 @@ def MergeAudioSegment(roList):
             except Exception as e:
                 default_log.warning('Failed to merge mp3 by pymp3cat: {e}')
 
-        if mergedFiles and os.path.exists(outputFile):
+        if mergedFiles and os.path.isfile(outputFile):
             chapters.append(outputFile)
 
 
@@ -258,7 +283,7 @@ def MergeAudioSegment(roList):
             except Exception as e:
                 info = 'Failed merge mp3 by pymp3cat: {e}'
 
-        if not info and mergedFiles and os.path.exists(outputFile):
+        if not info and mergedFiles and os.path.isfile(outputFile):
             try:
                 with open(outputFile, 'rb') as f:
                     data = f.read()
